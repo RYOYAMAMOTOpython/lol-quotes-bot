@@ -44,19 +44,34 @@ async def on_message(message):
     if message.content.startswith("!quote"):
         champ = message.content.replace("!quote", "").strip()
 
-        if champ == "random":
-            random_champ = random.choice(list(quotes.keys()))
+        if champ.startswith("list"):
+            champ_name =champ.replace("list ", "").strip()
+
+            if champ_name in quotes:
+                quote_list = champ_name + "の登録セリフ一覧\n"
+
+                number = 1
+
+                for quote in quotes[champ_name]:
+                    quote_list = quote_list + str(number) + ", " + quote + "\n"
+                    number = number + 1
+
+                await message.channel.send(quote_list)
+
+            else:
+                await message.channel.send("登録されてないチャンピオンです")        
+            
+        elif champ == "random":
+            random_champ =random.choice(list(quotes.keys()))
             quote = random.choice(quotes[random_champ])
             await message.channel.send(random_champ + ": " + quote)
-        
 
-        elif champ in quotes:
+        elif champ in quote:
             quote = random.choice(quotes[champ])
             await message.channel.send(quote)
 
-        
         else:
-            await message.channel.send("登録されてないチャンピオンです")
+            await message.channel.send("登録されていないチャンピオンです")
 
 
 
