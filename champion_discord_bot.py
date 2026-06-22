@@ -40,16 +40,25 @@ async def on_message(message):
         await message.channel.send("こんにちは!")
 
     # !quote チャンプ名でランダムなセリフを返す
-    if message.content.startswith("!quote "):
-        champ = message.content.replace("!quote ", "")
+    
+    if message.content.startswith("!quote"):
+        champ = message.content.replace("!quote", "").strip()
 
+        if champ == "random":
+            random_champ = random.choice(list(quotes.keys()))
+            quote = random.choice(quotes[random_champ])
+            await message.channel.send(random_champ + ": " + quote)
+        
 
-        if champ in quotes:
+        elif champ in quotes:
             quote = random.choice(quotes[champ])
             await message.channel.send(quote)
 
+        
         else:
             await message.channel.send("登録されてないチャンピオンです")
+
+
 
     #登録されているチャンプ一覧を返す
     if message.content =="!champions":
