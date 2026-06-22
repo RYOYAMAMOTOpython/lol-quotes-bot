@@ -77,12 +77,12 @@ async def on_message(message):
 
     #登録されているチャンプ一覧を返す
     if message.content =="!champions":
-        champion_list =""
+        champion_list ="登録チャンピオン一覧\n"
 
         for champ in quotes:
-            champion_list = champion_list + champ + "\n"
+            champion_list = champion_list + champ + " : " +str(len(quotes[champ])) + "個\n"
 
-        await message.channel.send(champion_list)
+        await message.channel.send(champion_list)    
 
     # 登録チャンプ数と登録セリフ数を返す
     if message.content == "!count":
@@ -100,6 +100,8 @@ async def on_message(message):
         help_message = ""
         help_message = help_message + "使えるコマンド一覧\n"
         help_message = help_message + "!quote チャンプ名 : ランダムでセリフを表示\n"
+        help_message = help_message + "!quote random : 全チャンプからランダムでセリフを表示\n"
+        help_message = help_message + "!quote list : 指定したチャンプの登録セリフ一覧を表示\n"
         help_message = help_message + "!champions : 登録チャンプ一覧を表示\n"
         help_message = help_message + "!count : 登録チャンプ数とセリフ数を表示\n"
         help_message = help_message + "こんにちは : あいさつを返す"
