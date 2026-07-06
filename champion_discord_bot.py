@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import requests
 import discord
 from dotenv import load_dotenv
 
@@ -104,9 +105,34 @@ async def on_message(message):
         help_message = help_message + "!quote list : 指定したチャンプの登録セリフ一覧を表示\n"
         help_message = help_message + "!champions : 登録チャンプ一覧を表示\n"
         help_message = help_message + "!count : 登録チャンプ数とセリフ数を表示\n"
+        help_message = help_message + "!github ユーザー名 : Githubユーザー情報を表示\n"
         help_message = help_message + "こんにちは : あいさつを返す"
+        
 
         await message.channel.send(help_message)
+    
+    if message.content.startswith("!github"):
+        user_name = message.content.replace("!github", "").strip()
 
+        url = "https://api.github.com/users/" + user_name
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            github_message = ""
+            github_message = github_message + "ユーザー名" + data["login"] + "\n"
+            github_message = github_message + "名前" + str(data["name"]) + "\n"
+            github_message = github_message + "公開リポジトリ数: " + str(data["public_repos"]) + "\n"
+            github_message = github_message + "フォロワー数: " + str(data["followers"]) + "\n"
+            github_message = github_message + "フォロー数: " + str(data["following"])
+
+            await message.channel.send(github_message)
+
+
+        else:
+            await message.channel.send("Githubユーザーが見つかりませんでした")
+    
 
 client.run(TOKEN)
