@@ -45,7 +45,7 @@ Discord上でコマンドを入力すると、`quotes.json` に登録された�
 ```text
 !rank ゲーム名#タグ
 
-表示例:ソロランク: PLATINUM IV
+例:ソロランク: PLATINUM IV
 LP: 1
 勝利: 254
 敗北: 235
