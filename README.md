@@ -24,6 +24,7 @@ Discord上でコマンドを入力すると、`quotes.json` に登録された�
 * `!help` で使えるコマンド一覧を表示
 * `!github ユーザー名` でGitHubユーザー情報を表示
 * `こんにちは` に反応して返事をする
+- `!rank ゲーム名#タグ` でLeague of Legendsのソロランク情報を表示
 
 ## 使用技術
 
@@ -35,8 +36,19 @@ Discord上でコマンドを入力すると、`quotes.json` に登録された�
 * GitHub API
 * Git / GitHub
 * GitHub Desktop
+- Riot Games API
 
 ## コマンド一覧
+
+### LoLランク情報表示
+
+```text
+!rank ゲーム名#タグ
+
+表示例:ソロランク: PLATINUM IV
+LP: 1
+勝利: 254
+敗北: 235
 
 ### 指定チャンピオンのランダムセリフ表示
 
