@@ -181,52 +181,120 @@ async def on_message(message):
             puuid = account_data["puuid"]
 
             rank_url = (
-                "https://jp1.api.riotgames.com"
-                + "/lol/league/v4/entries/by-puuid/"
+                "https://jp1.api.riotgames.com/lol/league/v4/entries/by-puuid/"
                 + puuid
 
             )
+        
 
+            
+            
             rank_response = requests.get(rank_url, headers=headers)
+
 
             print("ランク取得:", rank_response.status_code)
 
             if rank_response.status_code == 200:
-                rank_data =rank_response.json()
+                rank_data = rank_response.json()
+
+                print([rank_info.get("queueType") for rank_info in rank_data])
 
                 solo_rank = None
-                
+
                 for rank_info in rank_data:
                     if rank_info["queueType"] == "RANKED_SOLO_5x5":
                         solo_rank = rank_info
                         break
+                    
+                    
+                
+                        
+                        
 
                 if solo_rank is not None:
-                    rank_message =""
+                    wins = solo_rank["wins"]
+                    losses = solo_rank["losses"]
+
+                    total_games = wins + losses
+                    win_rate = (wins / total_games) * 100
+
+                    rank_message = ""
                     rank_message += "ソロランク: " + solo_rank["tier"] + " " + solo_rank["rank"] + "\n"
                     rank_message += "LP: " + str(solo_rank["leaguePoints"]) + "\n"
-                    rank_message += "勝利: " + str(solo_rank["wins"]) + "\n"
-                    rank_message += "敗北: " + str(solo_rank["losses"])
-                    
+                    rank_message += "勝利: " + str(wins) + "\n"
+                    rank_message += "敗北: " + str(losses) + "\n"
+                    rank_message += "勝率: " + str(round(win_rate, 1)) + "%"
+
                     await message.channel.send(rank_message)
 
                 else:
-                    await message.channel.send("このプレイヤーはソロランクをしていません")
+                    await message.channel.send("このプレイヤーはソロランクをしていません"
 
+
+                    )
+                
+            elif rank_response.status_code == 401:
+                await message.channel.send(
+                    "Riot APIキーが無効です、期限切れの可能性があります\n"
+                    "Developer Portalで新しいAPIキーに更新してください"
+
+                )
+                
+                        
+
+            elif rank_response.status_code == 429:
+                await message.channel.send(
+                    "Riot APIへのアクセス回数が多すぎます\n"
+                    "少し時間を空けてからもう一度試してください"
+
+                )
+                        
+                        
+            elif rank_response.status_code == 403:
+                await message.channel.send(
+                    "ランク情報へのアクセスが拒否されました\n"
+                    "APIキーやURLを確認してください"
+
+                )
             else:
                 await message.channel.send(
                     "ランク情報の取得に失敗しました\n"
                     + "ステータスコード: "
                     + str(rank_response.status_code)
 
-                )           
-        
-        else:
+                )
+
+        elif account_response.status_code == 401:
             await message.channel.send(
-                "Riot IDが見つからないか、アカウント情報の取得に失敗しました\n"
-                + "ステータスコード: "
-                + str(account_response.status_code)
+                "Riot APIキーが無効か、期限切れの可能性があります\n"
+                "Developer Portalで新しいAPIキーに更新してください")
+
+        elif account_response.status_code ==404:
+            await message.channel.send(
+                "Riot IDが見つかりませんでした\n"
+                "ゲーム名とタグを確認してください")
+
+        elif account_response.status_code == 429:
+            await message.channel.send(
+                "Riot APIへのアクセス回数が多すぎます\n"
+                "少し時間をあけてからもう一度試してください"
 
             )
+        elif account_response.status_code == 403:
+            await message.channel.send(
+                "Riot APIへのアクセスが拒否されました\n"
+                "APIキーやURLを確認してください"
+
+            )
+        else:
+            await message.channel.send(
+                "アカウント情報の取得に失敗しました\n"
+                + "ステータスコード: "
+                + str(account_response.status_code)
+            
+            )
+
+
+    
 
 client.run(TOKEN)
