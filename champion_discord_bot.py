@@ -23,12 +23,129 @@ intents.message_content = True
 #Discord Bot本体を作成
 client = discord.Client(intents=intents)
 
+def find_solo_rank(rank_data):
+    for rank_info in rank_data:
+        if rank_info["queueType"] == "RANKED_SOLO_5x5":
+            return rank_info
+    return None
+
+def get_riot_account(game_name, tag_line, headers):
+    account_url = (
+        "https://asia.api.riotgames.com"
+        + "/riot/account/v1/accounts/by-riot-id/"
+        + game_name
+        + "/"
+        + tag_line
+
+    )
+    account_response = requests.get(account_url, headers=headers)
+    return account_response
+
+def get_rank_data(puuid, headers):
+    rank_url = (
+        "https://jp1.api.riotgames.com"
+        + "/lol/league/v4/entries/by-puuid/"
+        + puuid
+
+    )
+    rank_response = requests.get(rank_url, headers=headers)
+    return rank_response
+
+def calculate_win_rate(wins, losses):
+    total_games = wins + losses
+    return (wins / total_games) * 100
+
+def get_github_user(user_name):
+    url = "https://api.github.com/users/" + user_name
+    response = requests.get(url)
+
+    return response
+
 # Botが起動してDiscordにログインしたときに実行される
 @client.event
 async def on_ready():
     print("Botがログインしました")
     print(client.user)
 
+def create_rank_message(solo_rank):
+    wins = solo_rank["wins"]
+    losses = solo_rank["losses"]
+
+    win_rate = calculate_win_rate(wins, losses)
+
+    rank_message = ""
+    rank_message += "ソロランク: " + solo_rank["tier"] + " " + solo_rank["rank"] + "\n"
+    rank_message += "LP: " + str(solo_rank["leaguePoints"]) + "\n"
+    rank_message += "勝利: " + str(wins) + "\n"
+    rank_message += "敗北: " + str(losses) + "\n"
+    rank_message += "勝率: " + str(round(win_rate,1)) + "%"
+    
+    return rank_message
+
+def create_github_message(data):
+    github_message = ""
+    github_message += "ユーザー名: " + data["login"] + "\n"
+    github_message += "名前: " + str(data["name"]) + "\n"
+    github_message += "公開リポジトリ数: " + str(data["public_repos"]) + "\n"
+    github_message += "フォロワー数: " + str(data["followers"]) + "\n"
+    github_message += "フォロー数: " + str(data["following"])
+
+    return github_message
+
+def create_quote_list(champ_name, quotes):
+    quote_list = champ_name + "の登録セリフ一覧\n"
+
+    number = 1
+
+    for quote in quotes[champ_name]:
+        quote_list = quote_list + str(number) + ". " + quote + "\n"
+        number = number + 1
+
+    return quote_list
+
+def get_random_quote(quotes):
+    random_champ = random.choice(list(quotes.keys()))
+    quote = random.choice(quotes[random_champ])
+
+    return random_champ + ": " + quote
+
+def get_champion_quote(champ, quotes):
+    quote = random.choice(quotes[champ])
+
+    return quote
+
+def create_champion_list(quotes):
+    champion_list = "登録チャンピオン一覧\n"
+
+    for champ in quotes:
+        champion_list = champion_list + champ + " : " + str(len(quotes[champ])) + "個\n"
+
+    return champion_list    
+
+def create_count_message(quotes):
+    total_quotes = 0
+
+    for champ in quotes:
+        total_quotes = total_quotes + len(quotes[champ])
+
+    count_message = "登録チャンプ数: " + str(len(quotes)) + "体/n"
+    count_message = count_message + "登録セリフ数: " + str(total_quotes) + "個"
+
+    return count_message
+
+def create_help_message():
+    help_message = ""
+    help_message += "使えるコマンド一覧\n"
+    help_message += "!quote チャンプ名 : ランダムでセリフを表示\n"
+    help_message += "!quote random : 全チャンプからランダムでセリフを表示\n"
+    help_message += "!quote list チャンプ名 : 指定したチャンプの登録セリフ一覧を表示\n"
+    help_message += "!champions : 登録チャンプ一覧を表示\n"
+    help_message += "!count : 登録チャンプ数とセリフ数を表示\n"
+    help_message += "!github ユーザー名 : GitHubユーザー情報を表示\n"
+    help_message += "!rank ゲーム名#タグ : LoLのソロランク情報を表示\n"
+    help_message += "こんにちは : あいさつを返す"
+
+    return help_message
 # Discordにメッセージが送られた時に実行される
 @client.event
 async def on_message(message):
@@ -50,13 +167,8 @@ async def on_message(message):
             champ_name =champ.replace("list ", "").strip()
 
             if champ_name in quotes:
-                quote_list = champ_name + "の登録セリフ一覧\n"
-
-                number = 1
-
-                for quote in quotes[champ_name]:
-                    quote_list = quote_list + str(number) + ", " + quote + "\n"
-                    number = number + 1
+                quote_list = create_quote_list(champ_name, quotes)
+                
 
                 await message.channel.send(quote_list)
 
@@ -64,12 +176,12 @@ async def on_message(message):
                 await message.channel.send("登録されてないチャンピオンです")        
             
         elif champ == "random":
-            random_champ =random.choice(list(quotes.keys()))
-            quote = random.choice(quotes[random_champ])
-            await message.channel.send(random_champ + ": " + quote)
+            random_quote = get_random_quote(quotes)
+
+            await message.channel.send(random_quote)
 
         elif champ in quotes:
-            quote = random.choice(quotes[champ])
+            quote = get_champion_quote(champ, quotes)
             await message.channel.send(quote)
 
         else:
@@ -79,35 +191,19 @@ async def on_message(message):
 
     #登録されているチャンプ一覧を返す
     if message.content =="!champions":
-        champion_list ="登録チャンピオン一覧\n"
-
-        for champ in quotes:
-            champion_list = champion_list + champ + " : " +str(len(quotes[champ])) + "個\n"
-
+        champion_list = create_champion_list(quotes)
+        
         await message.channel.send(champion_list)    
 
     # 登録チャンプ数と登録セリフ数を返す
     if message.content == "!count":
-        total_quotes = 0
-
-        for champ in quotes:
-            total_quotes = total_quotes + len(quotes[champ])
-
-        count_message = "登録チャンプ数: " +str(len(quotes)) +"体\n"
-        count_message = count_message + "登録セリフ数: " +str(total_quotes) + "個"
-
+        count_message = create_count_message(quotes)
+        
         await message.channel.send(count_message)    
     # 使えるコマンド一覧を返す
     if message.content == "!help":
-        help_message = ""
-        help_message = help_message + "使えるコマンド一覧\n"
-        help_message = help_message + "!quote チャンプ名 : ランダムでセリフを表示\n"
-        help_message = help_message + "!quote random : 全チャンプからランダムでセリフを表示\n"
-        help_message = help_message + "!quote list : 指定したチャンプの登録セリフ一覧を表示\n"
-        help_message = help_message + "!champions : 登録チャンプ一覧を表示\n"
-        help_message = help_message + "!count : 登録チャンプ数とセリフ数を表示\n"
-        help_message = help_message + "!github ユーザー名 : Githubユーザー情報を表示\n"
-        help_message = help_message + "こんにちは : あいさつを返す"
+        help_message = create_help_message()
+    
         
 
         await message.channel.send(help_message)
@@ -120,19 +216,12 @@ async def on_message(message):
             return
         
 
-        url = "https://api.github.com/users/" + user_name
-
-        response = requests.get(url)
+        response = get_github_user(user_name)
 
         if response.status_code == 200:
             data = response.json()
 
-            github_message = ""
-            github_message = github_message + "ユーザー名" + data["login"] + "\n"
-            github_message = github_message + "名前" + str(data["name"]) + "\n"
-            github_message = github_message + "公開リポジトリ数: " + str(data["public_repos"]) + "\n"
-            github_message = github_message + "フォロワー数: " + str(data["followers"]) + "\n"
-            github_message = github_message + "フォロー数: " + str(data["following"])
+            github_message = create_github_message(data)
 
             await message.channel.send(github_message)
 
@@ -157,21 +246,15 @@ async def on_message(message):
         print("ゲーム名:", game_name)
         print("タグ:", tag_line)
 
-        account_url = (
-            "https://asia.api.riotgames.com"
-            + "/riot/account/v1/accounts/by-riot-id/"
-            + game_name
-            + "/"
-            + tag_line
-
-        )
+        
         headers = {
             "X-Riot-Token" :RIOT_API_KEY
 
     
         }
 
-        account_response = requests.get(account_url, headers=headers)
+        account_response = get_riot_account(game_name, tag_line, headers)
+
 
         print("アカウント取得:", account_response.status_code)
 
@@ -180,17 +263,7 @@ async def on_message(message):
 
             puuid = account_data["puuid"]
 
-            rank_url = (
-                "https://jp1.api.riotgames.com/lol/league/v4/entries/by-puuid/"
-                + puuid
-
-            )
-        
-
-            
-            
-            rank_response = requests.get(rank_url, headers=headers)
-
+            rank_response = get_rank_data(puuid, headers)
 
             print("ランク取得:", rank_response.status_code)
 
@@ -199,12 +272,7 @@ async def on_message(message):
 
                 print([rank_info.get("queueType") for rank_info in rank_data])
 
-                solo_rank = None
-
-                for rank_info in rank_data:
-                    if rank_info["queueType"] == "RANKED_SOLO_5x5":
-                        solo_rank = rank_info
-                        break
+                solo_rank = find_solo_rank(rank_data)
                     
                     
                 
@@ -212,18 +280,7 @@ async def on_message(message):
                         
 
                 if solo_rank is not None:
-                    wins = solo_rank["wins"]
-                    losses = solo_rank["losses"]
-
-                    total_games = wins + losses
-                    win_rate = (wins / total_games) * 100
-
-                    rank_message = ""
-                    rank_message += "ソロランク: " + solo_rank["tier"] + " " + solo_rank["rank"] + "\n"
-                    rank_message += "LP: " + str(solo_rank["leaguePoints"]) + "\n"
-                    rank_message += "勝利: " + str(wins) + "\n"
-                    rank_message += "敗北: " + str(losses) + "\n"
-                    rank_message += "勝率: " + str(round(win_rate, 1)) + "%"
+                    rank_message = create_rank_message(solo_rank)
 
                     await message.channel.send(rank_message)
 
