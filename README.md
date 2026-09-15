@@ -1,62 +1,46 @@
 # LoL Quotes Bot
 
-Pythonで作成した、League of LegendsのチャンピオンセリフBotです。
+Pythonで作成した、League of Legends向けのDiscord Botです。
 
-Discord上でコマンドを入力すると、`quotes.json` に登録されたチャンピオンのセリフをランダムで表示したり、登録されているセリフ一覧を確認したりできます。
+最初はチャンピオンのセリフをランダムに表示するローカルBotとして作成し、その後Discord Botへ発展させました。
 
-また、GitHub APIと連携し、GitHubユーザー情報を取得する機能も追加しています。
+現在は、JSONによるセリフデータ管理に加えて、GitHub API・Riot Games APIとの連携にも対応しています。
+
+Riot Games APIを利用して、Riot IDからLeague of Legendsのソロランク情報を取得し、Discord Embedで表示できます。
+
+---
 
 ## 概要
 
-このBotは、Pythonの学習を目的として作成しました。
+このBotはPython学習を目的として制作しています。
 
-最初はローカル環境で動く簡単なセリフBotとして作成し、その後、Discord Botとして動作する形に発展させました。
+開発を進めながら、以下の内容を学習・実装しました。
 
-現在は、JSONファイルを使ったデータ管理、Discord Botのコマンド処理、外部API連携などを実装しています。
+- Pythonの基本文法
+- JSONファイルの読み込み
+- Discord Botの作成
+- 外部APIとの連携
+- HTTPステータスコードによるエラー処理
+- `.env` を利用した秘密情報の管理
+- Git / GitHubによるバージョン管理
+- 関数を使ったコード整理
+- Discord Embedによる表示
+
+---
 
 ## 主な機能
 
-* `!quote チャンプ名` で指定したチャンピオンのセリフをランダム表示
-* `!quote random` で全チャンピオンからランダムにセリフを表示
-* `!quote list チャンプ名` で指定したチャンピオンの登録セリフ一覧を表示
-* `!champions` で登録チャンピオン一覧とセリフ数を表示
-* `!count` で登録チャンピオン数と登録セリフ数を表示
-* `!help` で使えるコマンド一覧を表示
-* `!github ユーザー名` でGitHubユーザー情報を表示
-* `こんにちは` に反応して返事をする
-- `!rank ゲーム名#タグ` でLeague of Legendsのソロランク情報を表示
-
-## 使用技術
-
-* Python
-* discord.py
-* JSON
-* python-dotenv
-* requests
-* GitHub API
-* Git / GitHub
-* GitHub Desktop
-- Riot Games API
-
-## コマンド一覧
-
-### LoLランク情報表示
+### LoLセリフ機能
 
 ```text
-!rank ゲーム名#タグ
+!quote チャンプ名
+```
 
-例:ソロランク: PLATINUM IV
-LP: 1
-勝利: 254
-敗北: 235
-
-### 指定チャンピオンのランダムセリフ表示
+指定したチャンピオンの登録セリフから、ランダムで1つ表示します。
 
 ```text
 !quote ガレン
 ```
-
-指定したチャンピオンに登録されているセリフの中から、ランダムで1つ表示します。
 
 表示例：
 
@@ -64,13 +48,15 @@ LP: 1
 デマーシア！
 ```
 
-### 全チャンピオンからランダムセリフ表示
+---
+
+### 全チャンピオンからランダム表示
 
 ```text
 !quote random
 ```
 
-登録されている全チャンピオンの中からランダムで1体を選び、そのチャンピオンのセリフをランダムで表示します。
+登録されているチャンピオンからランダムで1体を選び、そのチャンピオンのセリフを表示します。
 
 表示例：
 
@@ -78,10 +64,12 @@ LP: 1
 ガレン: デマーシア！
 ```
 
-### 指定チャンピオンのセリフ一覧表示
+---
+
+### セリフ一覧表示
 
 ```text
-!quote list ガレン
+!quote list チャンプ名
 ```
 
 指定したチャンピオンに登録されているセリフを一覧で表示します。
@@ -90,29 +78,35 @@ LP: 1
 
 ```text
 ガレンの登録セリフ一覧
+
 1. デマーシア！
 2. 我が剣にかけて！
 3. 正義のために！
 ```
 
-### 登録チャンピオン一覧表示
+---
+
+### 登録チャンピオン一覧
 
 ```text
 !champions
 ```
 
-登録されているチャンピオン一覧と、チャンピオンごとのセリフ数を表示します。
+登録されているチャンピオンと、それぞれのセリフ数を表示します。
 
 表示例：
 
 ```text
 登録チャンピオン一覧
-ヴィエゴ : 4個
-イブリン : 4個
-カーサス : 4個
-ガレン : 3個
-ガリオ : 3個
+
+ヴィエゴ: 4個
+イブリン: 4個
+カーサス: 4個
+ガレン: 3個
+ガリオ: 3個
 ```
+
+---
 
 ### 登録数表示
 
@@ -120,50 +114,123 @@ LP: 1
 !count
 ```
 
-登録チャンピオン数と、登録セリフ数を表示します。
+登録されているチャンピオン数と、セリフの合計数を表示します。
 
 表示例：
 
 ```text
-登録チャンピオン数: 5体
+登録チャンプ数: 5体
 登録セリフ数: 18個
 ```
 
-### GitHubユーザー情報表示
+---
+
+## GitHubユーザー情報表示
 
 ```text
-!github RYOYAMAMOTOpython
+!github ユーザー名
 ```
 
-GitHub APIからユーザー情報を取得し、Discord上に表示します。
+GitHub APIを利用して、指定したユーザーの情報を取得します。
 
-表示する情報は以下の通りです。
+表示する情報：
 
-* ユーザー名
-* 名前
-* 公開リポジトリ数
-* フォロワー数
-* フォロー数
+- ユーザー名
+- 名前
+- 公開リポジトリ数
+- フォロワー数
+- フォロー数
+
+使用例：
+
+```text
+!github octocat
+```
+
+存在しないユーザー名が入力された場合は、ユーザーが見つからないことを表示します。
+
+---
+
+## LoLソロランク表示
+
+```text
+!rank ゲーム名#タグ
+```
+
+Riot Games APIを利用して、指定したプレイヤーのソロランク情報を取得します。
+
+使用例：
+
+```text
+!rank ゲーム名#JP1
+```
+
+取得・表示する情報：
+
+- ランクティア
+- ディビジョン
+- LP
+- 勝利数
+- 敗北数
+- 勝率
 
 表示例：
 
 ```text
-ユーザー名: RYOYAMAMOTOpython
-名前: ...
-公開リポジトリ数: ...
-フォロワー数: ...
-フォロー数: ...
+LoL Solo Rank
+
+ランク
+PLATINUM IV
+
+LP
+42
+
+勝利
+254
+
+敗北
+235
+
+勝率
+51.9%
 ```
 
-存在しないGitHubユーザー名を入力した場合は、ユーザーが見つからないことを表示します。
+ランク情報はDiscord Embedで表示します。
 
-### ヘルプ表示
+また、IRON・BRONZE・SILVER・GOLD・PLATINUM・EMERALD・DIAMOND・MASTER・GRANDMASTER・CHALLENGERなど、ランクティアに応じてEmbedのカラーが変化します。
+
+---
+
+## Riot APIのエラー処理
+
+Riot Games APIのHTTPステータスコードに応じて、Discord上に異なるエラーメッセージを表示します。
+
+```text
+401 : APIキーが無効、または期限切れ
+403 : APIへのアクセスが拒否された
+404 : Riot IDが見つからない
+429 : APIへのアクセス回数が多すぎる
+```
+
+ソロランクをプレイしていないプレイヤーの場合は、
+
+```text
+このプレイヤーはソロランクをしていません
+```
+
+と表示します。
+
+---
+
+## その他のコマンド
+
+### ヘルプ
 
 ```text
 !help
 ```
 
-使用できるコマンド一覧を表示します。
+使用可能なコマンド一覧を表示します。
 
 ### あいさつ
 
@@ -173,25 +240,43 @@ GitHub APIからユーザー情報を取得し、Discord上に表示します。
 
 Botがあいさつを返します。
 
-表示例：
+---
 
-```text
-こんにちは!
-```
+## 使用技術
+
+- Python
+- discord.py
+- JSON
+- python-dotenv
+- requests
+- GitHub API
+- Riot Games API
+- Git
+- GitHub
+- GitHub Desktop
+- Visual Studio Code
+- PowerShell
+
+---
 
 ## ファイル構成
 
 ```text
 Python_Practice
-├ champion_discord_bot.py
-├ champion_bot.py
-├ quotes.json
-├ api_test.py
-├ README.md
-├ .gitignore
-├ .env
-└ Practice_old
+│
+├─ champion_discord_bot.py
+├─ champion_bot.py
+├─ quotes.json
+├─ api_test.py
+├─ riot_test.py
+├─ README.md
+├─ .gitignore
+├─ .env
+│
+└─ Practice_old/
 ```
+
+---
 
 ## ファイルの役割
 
@@ -199,32 +284,43 @@ Python_Practice
 
 Discord Bot本体です。
 
-Discord上のメッセージを読み取り、以下のコマンドに反応します。
+Discord上のメッセージを読み取り、各コマンドに応じて処理を行います。
 
-* `!quote`
-* `!champions`
-* `!count`
-* `!help`
-* `!github`
-* `こんにちは`
+主な機能：
 
-`quotes.json` からセリフデータを読み込み、コマンドに応じてDiscordへ返信します。
+```text
+!quote
+!quote random
+!quote list
+!champions
+!count
+!help
+!github
+!rank
+こんにちは
+```
 
-また、`requests` を使ってGitHub APIへアクセスし、GitHubユーザー情報を取得します。
+GitHub API・Riot Games APIへのアクセスもこのファイルから行います。
+
+Botの機能が増えてコードが長くなったため、処理ごとに関数へ分割しています。
+
+---
 
 ### champion_bot.py
 
-ローカル環境で動く練習用Botです。
+Discord Bot化する前に作成した、ローカル環境用のLoLセリフBotです。
 
-Discordには接続せず、PowerShell上でメニュー形式のLoLセリフBotとして動作します。
+PowerShell上でメニューを選択して使用します。
 
-主にPythonの基礎学習のために作成しました。
+Pythonの基本文法やJSONの扱いを学習するために作成しました。
+
+---
 
 ### quotes.json
 
-チャンピオン名とセリフを保存するデータファイルです。
+チャンピオン名とセリフを保存しているJSONファイルです。
 
-Bot本体のコードとセリフデータを分けることで、セリフやチャンピオンを追加しやすくしています。
+Bot本体とセリフデータを分離することで、Pythonコードを変更せずにチャンピオンやセリフを追加しやすくしています。
 
 例：
 
@@ -244,37 +340,50 @@ Bot本体のコードとセリフデータを分けることで、セリフや�
 }
 ```
 
+---
+
 ### api_test.py
 
-API学習用の練習ファイルです。
+GitHub APIを学習するために使用したテストファイルです。
 
-GitHub APIにアクセスし、ユーザー情報を取得する練習に使用しました。
+主に以下を学習しました。
 
-このファイルでは、以下の内容を学習しました。
+```text
+requests.get()
+response.status_code
+response.json()
+```
 
-* `requests.get()` で外部APIにアクセスする
-* `response.status_code` で通信結果を確認する
-* `response.json()` でJSONデータをPythonで扱える形にする
-* `data["login"]` のように必要な情報を取り出す
-* 存在しないユーザー名を入力した場合のエラー処理を行う
+APIから取得したJSONデータの中から必要な情報を取り出す練習にも使用しました。
+
+---
+
+### riot_test.py
+
+Riot Games APIを学習するために使用したテストファイルです。
+
+Riot IDからPUUIDを取得し、そのPUUIDを利用してLeague of Legendsのランク情報を取得する処理をテストしました。
+
+Discord Botへ実装する前に、API単体で正常に動作するか確認するために使用しています。
+
+---
 
 ### .env
 
-Discord Botのトークンを保存するファイルです。
-
-セキュリティ上、GitHubにはアップロードしません。
-
-例：
+Discord Bot TokenとRiot API Keyを保存します。
 
 ```text
-DISCORD_TOKEN=自分のBotトークン
+DISCORD_TOKEN=自分のDiscord Bot Token
+RIOT_API_KEY=自分のRiot API Key
 ```
+
+秘密情報を含むため、GitHubにはアップロードしません。
+
+---
 
 ### .gitignore
 
-GitHubにアップロードしないファイルを指定するためのファイルです。
-
-このプロジェクトでは、以下のように設定しています。
+GitHubにアップロードしないファイルを指定します。
 
 ```text
 .env
@@ -282,13 +391,17 @@ __pycache__/
 *.pyc
 ```
 
-`.env` にはBotトークンが入っているため、必ずGitHubにアップロードしないようにしています。
+`.env` に保存したDiscord TokenやRiot API KeyがGitHubに公開されないようにしています。
+
+---
 
 ### Practice_old
 
-学習途中で作成した練習用ファイルをまとめているフォルダです。
+Python学習途中で作成した練習用ファイルを保存しています。
 
-作品として使うメインファイルと、練習用ファイルを分けるために作成しました。
+メインで使用するファイルと、学習用ファイルを分けるために作成しました。
+
+---
 
 ## セットアップ方法
 
@@ -300,17 +413,24 @@ PowerShellで以下を実行します。
 py -m pip install discord.py python-dotenv requests
 ```
 
-### 2. `.env` ファイルを作成
+---
 
-プロジェクトフォルダ内に `.env` ファイルを作成し、Discord Botのトークンを保存します。
+### 2. `.env` を作成
+
+プロジェクトフォルダ内に `.env` ファイルを作成します。
 
 ```text
-DISCORD_TOKEN=自分のBotトークン
+DISCORD_TOKEN=自分のDiscord Bot Token
+RIOT_API_KEY=自分のRiot API Key
 ```
+
+実際のTokenやAPI KeyをREADMEやソースコードへ直接書かないようにします。
+
+---
 
 ### 3. Botを起動
 
-PowerShellでプロジェクトフォルダに移動します。
+PowerShellでプロジェクトフォルダへ移動します。
 
 ```powershell
 cd Desktop\Python_Practice
@@ -322,146 +442,276 @@ Botを起動します。
 py champion_discord_bot.py
 ```
 
-ターミナルに以下のように表示されれば、Botの起動に成功しています。
+以下のようなメッセージが表示されれば起動成功です。
 
 ```text
 Botがログインしました
 ```
 
-Botを停止する場合は、PowerShellで `Ctrl + C` を押します。
+Botを停止する場合は、
+
+```text
+Ctrl + C
+```
+
+を押します。
+
+---
 
 ## 工夫した点
 
-### 1. セリフデータをJSONで管理した
+### JSONでセリフデータを管理
 
-最初はPythonファイルの中に直接セリフを書いていましたが、途中から `quotes.json` に分けました。
+最初はPythonコード内に直接セリフを書いていましたが、途中から `quotes.json` に分離しました。
 
-これにより、Bot本体のコードを大きく変更しなくても、チャンピオンやセリフを追加できるようになりました。
+これにより、Bot本体を大きく変更せずにセリフを追加できます。
 
-### 2. 複数のコマンドを実装した
+---
 
-単にセリフを返すだけでなく、以下のような複数のコマンドを追加しました。
+### 外部APIとの連携
 
-* 指定チャンピオンのランダムセリフ表示
-* 全チャンピオンからのランダム表示
-* 指定チャンピオンのセリフ一覧表示
-* 登録チャンピオン一覧表示
-* 登録数表示
-* ヘルプ表示
+GitHub APIとRiot Games APIの2種類の外部APIを利用しています。
 
-これにより、Discord上で使いやすいBotになるようにしました。
+自分で用意したデータだけでなく、外部サービスからリアルタイムで情報を取得してDiscordへ表示できるようにしました。
 
-### 3. 外部APIと連携した
+---
 
-`requests` を使ってGitHub APIにアクセスし、GitHubユーザー情報を取得する機能を追加しました。
+### Riot IDからランク情報を取得
 
-これにより、自作データを返すだけでなく、外部サービスから取得したデータをDiscordに表示できるようになりました。
+Riot Games APIでは、
 
-### 4. `.env` で秘密情報を管理した
+```text
+Riot ID
+↓
+PUUID
+↓
+ランク情報
+```
 
-Discord Botのトークンをコードに直接書かず、`.env` に保存しました。
+という流れでデータを取得しています。
 
-また、`.gitignore` を使って `.env` をGitHubにアップロードしないようにしました。
+複数のAPIを組み合わせて1つの機能を作る経験ができました。
 
-### 5. GitHubで作品として管理した
+---
 
-GitHub Desktopを使って、変更内容をcommit / pushしながら開発しました。
+### 勝率を計算
 
-コードを変更したあと、動作確認を行い、GitHubに反映する流れを学びました。
+Riot Games APIから取得した勝利数と敗北数を使い、
+
+```text
+勝率 = 勝利数 ÷ 総試合数 × 100
+```
+
+で勝率を計算しています。
+
+---
+
+### Discord Embedを使用
+
+ランク情報を通常のテキストではなく、Discord Embedで表示しています。
+
+ランクティアに応じてEmbedカラーを変更することで、情報を見やすくしました。
+
+---
+
+### 関数によるコード整理
+
+機能追加によって `on_message` 内のコードが長くなったため、処理を関数へ分割しました。
+
+例えば、以下のような処理を別の関数として管理しています。
+
+```text
+Riotアカウント情報の取得
+ランク情報の取得
+ソロランク情報の検索
+勝率計算
+ランクEmbedの作成
+GitHubユーザー情報の取得
+GitHub表示文の作成
+セリフ一覧の作成
+ランダムセリフ取得
+登録チャンピオン一覧作成
+登録数表示
+ヘルプ表示
+```
+
+これにより、Bot本体の処理を読みやすくしました。
+
+---
+
+### `.env` を使った秘密情報管理
+
+Discord TokenやRiot API Keyをコードへ直接書かず、`.env` から読み込んでいます。
+
+`.gitignore` を利用し、秘密情報がGitHubへアップロードされないようにしています。
+
+---
 
 ## 苦労した点
 
-### 1. Pythonのインデント
+### Pythonのインデント
 
-Pythonでは、インデントによって処理の所属が決まります。
+Pythonではインデントによって処理の所属が決まります。
 
-`if`、`elif`、`else` の位置がずれると、意図しない動作やエラーが発生しました。
+特に、
 
-特に、`!quote random` や `!quote list` の処理を追加する際に、インデントの位置を何度も確認しました。
+```text
+if
+elif
+else
+for
+```
 
-### 2. 変数名の違い
+を組み合わせた処理では、インデントの位置によって意図しない動作になることがありました。
 
-Pythonでは、変数名が1文字でも違うと別物として扱われます。
+---
+
+### 変数名・関数名の違い
+
+Pythonでは1文字でも違うと別の変数として扱われます。
 
 例：
 
 ```text
-quotes と "quotes" は別物
-quote と quotes は別物
-message.content と message.conntent は別物
+quote / quotes
+
+win / wins
+
+rank_url / rank_ulr
+
+discord.Color / discord.color
 ```
 
-この違いによって、エラーが発生することを学びました。
+エラーメッセージを確認しながら修正しました。
 
-### 3. JSONの書き方
+---
 
-JSONでは、カンマの位置やダブルクォーテーションの使い方が重要です。
+### APIのURL
 
-チャンピオンやセリフを追加する際に、JSONの形式が崩れないように注意しました。
+APIではURLが少し違うだけでも正常にアクセスできません。
 
-### 4. APIのエラー処理
+Riot Games APIの実装では、URLのスペルや余分なスペースなどによって通信エラーが発生しました。
 
-GitHub APIに存在しないユーザー名を送った場合、`404` が返ってきます。
+APIを使用する際はURLを正確に指定する必要があることを学びました。
 
-そのため、`response.status_code` を確認し、成功した場合と失敗した場合で処理を分ける必要がありました。
+---
+
+### HTTPステータスコード
+
+APIから正常なデータが返ってくるとは限らないため、
+
+```python
+response.status_code
+```
+
+を確認し、成功・失敗によって処理を分ける必要がありました。
+
+---
+
+### APIキーの期限
+
+Riot GamesのDevelopment API Keyには期限があるため、期限切れになるとAPIへアクセスできなくなります。
+
+APIキー更新後は `.env` を更新し、Botを再起動する必要があることを学びました。
+
+---
 
 ## 学んだこと
 
-* PythonでDiscord Botを作る方法
-* `discord.py` を使ったメッセージ処理
-* `if / elif / else` による条件分岐
-* `for` 文を使った一覧表示
-* `len()` を使った件数の取得
-* `random.choice()` を使ったランダム表示
-* `json.load()` を使ったJSONファイルの読み込み
-* `.env` を使った秘密情報の管理
-* `.gitignore` を使った除外設定
-* `requests` を使った外部APIアクセス
-* GitHub APIからJSONデータを取得する方法
-* ステータスコードによるエラー処理
-* GitHub Desktopを使ったcommit / push
-* READMEを書いて作品内容を説明する方法
+このBotの制作を通して、主に以下を学びました。
 
-## 現在できること
+```text
+Pythonの基本文法
+変数
+if / elif / else
+for
+list
+dict
+def
+return
+JSON
+random.choice()
+ファイル読み込み
+Discord Bot
+async / await
+外部API
+requests
+HTTPステータスコード
+JSONレスポンス
+.env
+Git / GitHub
+commit / push
+コードの関数化
+Discord Embed
+エラーの読み方・デバッグ
+```
 
-現在のBotでは、Discord上で以下の操作ができます。
+---
+
+## 現在使用できるコマンド
 
 ```text
 こんにちは
-!quote ヴィエゴ
-!quote ガレン
+
+!quote チャンプ名
 !quote random
-!quote list ガレン
+!quote list チャンプ名
+
 !champions
 !count
 !help
-!github RYOYAMAMOTOpython
+
+!github ユーザー名
+
+!rank ゲーム名#タグ
 ```
+
+---
 
 ## 今後追加したい機能
 
-* Riot APIと連携する
-* `!rank サモナー名` でLeague of Legendsのランク情報を表示する
-* 登録チャンピオンをさらに増やす
-* Discord上からセリフを追加できる機能を作る
-* コマンドのエラー表示をより分かりやすくする
-* Botをクラウド上で常時稼働させる
+- フレックスランク情報の表示
+- Riot Games APIを利用したLoL機能の追加
+- 登録チャンピオン・セリフの追加
+- Discord上からセリフを登録する機能
+- Botをクラウド上で常時稼働させる
+- コードをさらに整理し、必要に応じてファイルを分割する
+- Discord上での表示をさらに改善する
+
+---
 
 ## 今後の目標
 
-最終的には、以下のようなBotに発展させたいです。
+現在は、
 
 ```text
-PythonでJSONを扱い、
-Discord Botとして動作し、
-外部APIからデータを取得し、
-Discord上で結果を返すBot
+Python
+↓
+JSON
+↓
+Discord Bot
+↓
+GitHub API
+↓
+Riot Games API
+↓
+エラー処理
+↓
+関数化
+↓
+Discord Embed
 ```
 
-特に次の目標は、Riot APIと連携してLeague of Legendsのサモナー情報やランク情報を取得することです。
+まで実装しました。
+
+今後はBotをクラウド上で常時稼働させ、自分のPCを起動していない状態でも利用できるようにすることを目標としています。
+
+さらにRiot Games APIを利用した機能を追加し、League of Legendsに特化したDiscord Botとして発展させていきます。
+
+---
 
 ## 注意
 
-このBotは学習目的で作成しています。
+このBotはPython・API・Discord Bot開発の学習目的で制作しています。
 
-Discord Botのトークンなどの秘密情報は `.env` に保存し、GitHubにはアップロードしないようにしています。
+Discord Bot TokenやRiot API Keyなどの秘密情報は `.env` に保存し、GitHubにはアップロードしないようにしています。
