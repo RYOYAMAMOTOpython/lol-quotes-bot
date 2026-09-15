@@ -146,6 +146,75 @@ def create_help_message():
     help_message += "こんにちは : あいさつを返す"
 
     return help_message
+
+def create_rank_embed(solo_rank):
+    wins = solo_rank["wins"]
+    losses = solo_rank["losses"]
+
+    win_rate = calculate_win_rate(wins, losses)
+
+
+    tier = solo_rank["tier"]
+
+    if tier == "IRON":
+        rank_color = discord.Color.dark_gray()
+
+    elif tier == "BRONZE":
+        rank_color = discord.Color.from_rgb(205, 127, 50)
+    elif tier == "SILVER":
+        rank_color = discord.Color.from_rgb(192, 192, 192)
+    elif tier == "GOLD":
+        rank_color = discord.Color.from_rgb(255, 215, 0)
+    elif tier == "PLATINUM":
+        rank_color = discord.Color.from_rgb(0, 200, 225)
+    elif tier == "DIAMOND":
+        rank_color = discord.Color.from_rgb(0, 100, 200)
+    elif tier == "MASTER":
+        rank_color = discord.Color.from_rgb(128, 0, 128)
+    elif tier == "GRANDMASTER":
+        rank_color = discord.Color.from_rgb(255, 0, 0)
+    elif tier == "CHALLENGER":
+        rank_color = discord.Color.from_rgb(0, 200, 225)
+    else:
+        rank_color = discord.Color.default()    
+
+
+    embed = discord.Embed(
+        title="LoL Solo Rank" ,
+        color=rank_color
+    )
+
+    embed.add_field(
+        name="ランク",
+        value=solo_rank["tier"] + " " + solo_rank["rank"],
+        inline=False
+    )
+
+    embed.add_field(
+        name="LP",
+        value=str(solo_rank["leaguePoints"]),
+        inline=True
+    )
+
+    embed.add_field(
+        name="勝利",
+        value=str(wins),
+        inline=True
+    )
+
+    embed.add_field(
+        name="敗北",
+        value=str(losses),
+        inline=True
+    )
+
+    embed.add_field(
+        name="勝率",
+        value=str(round(win_rate, 1)) + "%",
+        inline=True
+    )
+
+    return embed
 # Discordにメッセージが送られた時に実行される
 @client.event
 async def on_message(message):
@@ -280,9 +349,11 @@ async def on_message(message):
                         
 
                 if solo_rank is not None:
-                    rank_message = create_rank_message(solo_rank)
+                    rank_embed = create_rank_embed(solo_rank)
 
-                    await message.channel.send(rank_message)
+                    await message.channel.send(embed=rank_embed)
+                    
+                    
 
                 else:
                     await message.channel.send("このプレイヤーはソロランクをしていません"
