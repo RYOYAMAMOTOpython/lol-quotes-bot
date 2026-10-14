@@ -248,6 +248,30 @@ def get_match_data(match_id, headers):
     match_response = requests.get(match_url, headers=headers)
     return match_response
 
+def get_match_timeline(match_id, headers):
+    timeline_url = (
+        "https://asia.api.riotgames.com"
+        + "/lol/match/v5/matches/"
+        + match_id 
+        + "/timeline"
+
+    )
+
+    timeline_response = requests.get(timeline_url, headers=headers)
+
+    return timeline_response
+
+def create_recent_embed(summary, recent_message):
+    embed = discord.Embed(
+        title="LoL Recent Matches",
+        description=summary + recent_message,
+        color=discord.Color.blue()
+
+    )
+    return embed
+
+
+
 # Discordにメッセージが送られた時に実行される
 @client.event
 async def on_message(message):
@@ -498,6 +522,10 @@ async def on_message(message):
                 for match_id in match_ids:
                     match_data_response = get_match_data(match_id, headers)
 
+                    timeline_response = get_match_timeline(match_id, headers)
+
+                    print("タイムライン取得:", timeline_response.status_code)
+
                     if match_data_response.status_code == 200:
                         match_data = match_data_response.json()
                         
@@ -505,7 +533,7 @@ async def on_message(message):
 
                         participants = match_data["info"]["participants"]
 
-                        plaer_data = None
+                        player_data = None
                         for participant in participants:
                             if participant["puuid"] == puuid:
                                 player_data = participant
@@ -519,6 +547,63 @@ async def on_message(message):
                             else:
                                 result = "LOSS"
                                 losses_count = losses_count + 1
+                            
+                            timeline_data = timeline_response.json()
+                            
+                            frames = timeline_data["info"]["frames"]
+                            last_frame = frames[-1]
+
+                            participant_id = str(player_data["participantId"])
+                        
+                            participant_frame = last_frame["participantFrames"][participant_id]
+                            print("participant_frameのキー:")
+                            print(participant_frame.keys())
+                            print("minionsKilled:", participant_frame.get("minionsKiled", "キーなし"))
+                            print("jungleminionsKilled:" , participant_frame.get("jungleMinionsKiled", "キーなし"))
+
+
+                            
+
+                            
+                            
+                            game_duration = match_data["info"]["gameDuration"]
+
+                            print("ミニオンCS:", player_data.get("totalMinionsKiled", "キーなし"))
+                            print("ジャングルCS:", player_data.get("neutralMinionsKiled","キーなし"))
+                            print("ゲームモード:", match_data["info"].get("gameMode"))
+                            print("キューID:", match_data["info"].get("queueID"))
+
+
+                            minion_cs = player_data.get("totalMinionsKiled")
+                            jungle_cs = player_data.get("neutralMinionsKiled")
+
+                            if minion_cs is not None or jungle_cs is not None:
+
+                                cs = (minion_cs or 0) + (jungle_cs or 0)
+                            else:
+                                cs = 0
+
+                            game_duration = match_data["info"]["gameDuration"]
+                            minutes = game_duration // 60
+                            seconds = game_duration % 60
+
+                            team_id = player_data["teamId"]
+                            team_kills = 0
+                            
+                            for participant in participants:
+                                if participant["teamId"] == team_id:
+                                    team_kills += participant["kills"]
+
+                            if team_kills > 0:
+                                kill_participation = (
+                                    (player_data["kills"] + player_data["assists"])
+                                    / team_kills
+                                    *100
+
+                                )
+                            else:
+                                kill_participation = 0            
+
 
                             recent_message +=str(number) + ". " + result + "\n"
                             recent_message += "チャンピオン: " + player_data["championName"] + "\n"       
@@ -526,6 +611,15 @@ async def on_message(message):
                             recent_message += str(player_data["kills"]) + "/"
                             recent_message += str(player_data["deaths"]) + "/"
                             recent_message += str(player_data["assists"]) + "\n\n"
+                            
+
+                            recent_message += "試合時間: "
+                            recent_message += str(minutes) + "分"
+                            recent_message += str(seconds) + "秒\n"
+
+                            recent_message += "キル関与率: "
+                            recent_message += str(round(kill_participation, 1)) + "%\n\n"
+
 
                     number = number + 1
 
@@ -537,8 +631,10 @@ async def on_message(message):
                     + "敗\n\n"
 
                 )    
+                recent_embed = create_recent_embed(summary, recent_message)
 
-                await message.channel.send(summary + recent_message)                     
+
+                await message.channel.send(embed=recent_embed)                    
 
 
 
