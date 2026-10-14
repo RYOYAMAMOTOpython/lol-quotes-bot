@@ -574,14 +574,12 @@ async def on_message(message):
                             print("キューID:", match_data["info"].get("queueID"))
 
 
-                            minion_cs = player_data.get("totalMinionsKiled")
-                            jungle_cs = player_data.get("neutralMinionsKiled")
+                            minions_cs = participant_frame.get("minionsKilled", 0)
+                            jungle_cs = participant_frame.get("jungleMinionsKilled",0)
 
-                            if minion_cs is not None or jungle_cs is not None:
+                            cs = minions_cs + jungle_cs
 
-                                cs = (minion_cs or 0) + (jungle_cs or 0)
-                            else:
-                                cs = 0
+                            print("Timeline CS:", cs)
 
                             game_duration = match_data["info"]["gameDuration"]
                             minutes = game_duration // 60
@@ -611,11 +609,11 @@ async def on_message(message):
                             recent_message += str(player_data["kills"]) + "/"
                             recent_message += str(player_data["deaths"]) + "/"
                             recent_message += str(player_data["assists"]) + "\n\n"
+                            recent_message += "CS: " + str(cs) + "\n"
+                        
                             
 
-                            recent_message += "試合時間: "
-                            recent_message += str(minutes) + "分"
-                            recent_message += str(seconds) + "秒\n"
+                            recent_message += "試合時間: " + str(minutes) + "分" + str(seconds) + "秒\n"
 
                             recent_message += "キル関与率: "
                             recent_message += str(round(kill_participation, 1)) + "%\n\n"
