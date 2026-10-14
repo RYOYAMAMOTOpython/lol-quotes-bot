@@ -156,6 +156,8 @@ def create_rank_embed(solo_rank):
 
     tier = solo_rank["tier"]
 
+
+
     if tier == "IRON":
         rank_color = discord.Color.dark_gray()
 
@@ -215,6 +217,37 @@ def create_rank_embed(solo_rank):
     )
 
     return embed
+
+def get_recent_match_ids(puuid, headers):
+    match_url = (
+        "https://asia.api.riotgames.com"
+        + "/lol/match/v5/matches/by-puuid/"
+        + puuid
+        + "/ids?start=0&count=5"
+
+    )
+
+    print(repr(match_url))
+
+    match_response = requests.get(match_url, headers=headers)
+
+    print("recent取得:", match_response.status_code)
+    print(match_response.text)
+
+
+    return match_response
+
+def get_match_data(match_id, headers):
+    match_url = (
+        "https://asia.api.riotgames.com"
+        + "/lol/match/v5/matches/"
+        + match_id
+
+    )   
+
+    match_response = requests.get(match_url, headers=headers)
+    return match_response
+
 # Discordにメッセージが送られた時に実行される
 @client.event
 async def on_message(message):
@@ -325,6 +358,7 @@ async def on_message(message):
         account_response = get_riot_account(game_name, tag_line, headers)
 
 
+
         print("アカウント取得:", account_response.status_code)
 
         if account_response.status_code == 200:
@@ -422,7 +456,109 @@ async def on_message(message):
             
             )
 
+    if message.content.startswith("!recent"):
+        riot_id = message.content.replace("!recent", "").strip()
 
+        if riot_id == "":
+            await message.channel.send("使い方: !recent ゲーム名#タグ")
+            return
+
+        if "#" not in riot_id:
+            await message.channel.send("タグまで入力してください\n例: !recent 名前#JP1")
+            return
+ 
+        game_name, tag_line = riot_id.split("#", 1)
+
+        headers = {
+            "X-Riot-Token": RIOT_API_KEY
+
+        }
+
+        account_response = get_riot_account(game_name, tag_line, headers)
+
+        if account_response.status_code == 200:
+            account_data = account_response.json()
+
+            puuid = account_data["puuid"]
+
+            match_response = get_recent_match_ids(puuid, headers)
+
+            if match_response.status_code == 200:
+                match_ids = match_response.json()
+
+                recent_message = "直近5試合\n\n"
+                number = 1
+                
+                wins_count = 0
+                losses_count = 0
+
+                recent_message = ""
+                number = 1
+
+                for match_id in match_ids:
+                    match_data_response = get_match_data(match_id, headers)
+
+                    if match_data_response.status_code == 200:
+                        match_data = match_data_response.json()
+                        
+
+
+                        participants = match_data["info"]["participants"]
+
+                        plaer_data = None
+                        for participant in participants:
+                            if participant["puuid"] == puuid:
+                                player_data = participant
+                                break
+
+                        if player_data is not None:
+                            if player_data["win"]:
+                                result = "WIN"
+                                wins_count = wins_count + 1
+
+                            else:
+                                result = "LOSS"
+                                losses_count = losses_count + 1
+
+                            recent_message +=str(number) + ". " + result + "\n"
+                            recent_message += "チャンピオン: " + player_data["championName"] + "\n"       
+                            recent_message += "KDA: "
+                            recent_message += str(player_data["kills"]) + "/"
+                            recent_message += str(player_data["deaths"]) + "/"
+                            recent_message += str(player_data["assists"]) + "\n\n"
+
+                    number = number + 1
+
+                summary = (
+                    "直近5試合: "
+                    + str(wins_count)
+                    + "勝 "
+                    + str(losses_count)
+                    + "敗\n\n"
+
+                )    
+
+                await message.channel.send(summary + recent_message)                     
+
+
+
+
+
+            else:
+                await message.channel.send(
+                    "試合履歴の取得に失敗しました\n"
+                    + "ステータスコード: "
+                    +str(match_response.status_code)
+
+                )    
+
+        else:
+            await message.channel.send(
+                "Riot IDの取得に失敗しました\n"
+                + "ステータスコード: "
+                +str(account_response.status_code)
+
+            )
     
 
 client.run(TOKEN)
