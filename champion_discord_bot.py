@@ -270,6 +270,48 @@ def create_recent_embed(summary, recent_message):
     )
     return embed
 
+def get_mastery_data(puuid, headers):
+    mastery_url = (
+        "https://jp1.api.riotgames.com"
+        + "/lol/champion-mastery/v4/champion-masteries/by-puuid/"
+        + puuid
+        
+    )
+
+    mastery_response = requests.get(mastery_url, headers=headers)
+    return mastery_response
+
+def get_champion_map():
+    version_response = requests.get(
+        "https://ddragon.leagueoflegends.com/api/versions.json"
+
+    )
+
+    latest_version = version_response.json()[0]
+
+    champion_url = (
+        "https://ddragon.leagueoflegends.com/cdn/"
+        + latest_version
+        + "/data/ja_JP/champion.json"
+
+    )
+
+
+    champion_response = requests.get(champion_url)
+    champion_data = champion_response.json()
+
+    champion_map ={}
+
+    for champion in champion_data["data"].values():
+        champion_id = int(champion["key"])
+        champion_name = champion["name"]
+
+        champion_map[champion_id] = champion_name
+
+    return champion_map    
+
+
+
 
 
 # Discordにメッセージが送られた時に実行される
@@ -518,6 +560,8 @@ async def on_message(message):
 
                 recent_message = ""
                 number = 1
+                
+                champion_map = get_champion_map()
 
                 for match_id in match_ids:
                     match_data_response = get_match_data(match_id, headers)
@@ -604,7 +648,14 @@ async def on_message(message):
 
 
                             recent_message +=str(number) + ". " + result + "\n"
-                            recent_message += "チャンピオン: " + player_data["championName"] + "\n"       
+                            champion_name = champion_map.get(
+                                player_data["championId"],
+                                player_data["championName"]
+
+                            )
+
+                            recent_message += "チャンピオン: " + champion_name + "\n"
+
                             recent_message += "KDA: "
                             recent_message += str(player_data["kills"]) + "/"
                             recent_message += str(player_data["deaths"]) + "/"
@@ -653,6 +704,65 @@ async def on_message(message):
                 +str(account_response.status_code)
 
             )
+    if message.content.startswith("!mastery"):
+        riot_id = message.content.replace("!mastery", "").strip()
+        if riot_id == "":
+            await message.channel.send(
+                "使い方: !mastery ゲーム名#タグ"
+
+            )
+            return
+
+        game_name, tag_line = riot_id.split("#", 1)
+
+        headers = {
+            "X-Riot-Token": RIOT_API_KEY
+
+        }
+
+        account_response = get_riot_account(game_name, tag_line, headers)
+
+        if account_response.status_code == 200:
+            account_data = account_response.json()
+            puuid = account_data["puuid"]
+
+
+            mastery_response = get_mastery_data(puuid, headers)
+            print("Mastery取得:", mastery_response.status_code)
+
+            mastery_data = mastery_response.json()
+            
+            champion_map = get_champion_map()
+            
+            mastery_message = ""
+            number = 1
+
+            for mastery in mastery_data[:3]:
+                champion_name = champion_map.get(
+                    mastery["championId"],
+                    str(mastery["championId"])
+
+                )
+
+                mastery_message += str(number) + ", " + champion_name + "\n"
+                mastery_message += "レベル: " + str(mastery["championLevel"]) + "\n"
+                mastery_message += "ポイント: " + format(mastery["championPoints"], ",") + "\n\n"
+
+                number = number + 1
+
+            mastery_embed = discord.Embed(
+                title="LoL Champion Mastery",
+                description=mastery_message,
+                color=discord.Color.blue()
+
+            )
+
+            await message.channel.send(embed=mastery_embed)    
+
+               
+
+
+
     
 
 client.run(TOKEN)
