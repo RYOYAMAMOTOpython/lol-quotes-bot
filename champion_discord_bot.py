@@ -4,10 +4,11 @@ import random
 import requests
 import riot_api
 import discord
+import embeds
 from dotenv import load_dotenv
 
 # .envファイルを読み込む
-load_dotenv()
+load_dotenv(override=True)
 
 # .envからのDiscord botのトークを取得する
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -40,9 +41,7 @@ def find_flex_rank(rank_data):
 
 
 
-def calculate_win_rate(wins, losses):
-    total_games = wins + losses
-    return (wins / total_games) * 100
+
 
 def get_github_user(user_name):
     url = "https://api.github.com/users/" + user_name
@@ -56,20 +55,7 @@ async def on_ready():
     print("Botがログインしました")
     print(client.user)
 
-def create_rank_message(solo_rank):
-    wins = solo_rank["wins"]
-    losses = solo_rank["losses"]
 
-    win_rate = calculate_win_rate(wins, losses)
-
-    rank_message = ""
-    rank_message += "ソロランク: " + solo_rank["tier"] + " " + solo_rank["rank"] + "\n"
-    rank_message += "LP: " + str(solo_rank["leaguePoints"]) + "\n"
-    rank_message += "勝利: " + str(wins) + "\n"
-    rank_message += "敗北: " + str(losses) + "\n"
-    rank_message += "勝率: " + str(round(win_rate,1)) + "%"
-    
-    return rank_message
 
 def create_github_message(data):
     github_message = ""
@@ -136,112 +122,6 @@ def create_help_message():
 
     return help_message
 
-def create_rank_embed(solo_rank, flex_rank):
-    wins = solo_rank["wins"]
-    losses = solo_rank["losses"]
-
-    win_rate = calculate_win_rate(wins, losses)
-
-    if flex_rank is not None:
-        flex_wins = flex_rank["wins"]
-        flex_losses = flex_rank["losses"]
-        flex_win_rate = calculate_win_rate(flex_wins, flex_losses)
-
-
-    tier = solo_rank["tier"]
-
-
-
-    if tier == "IRON":
-        rank_color = discord.Color.dark_gray()
-
-    elif tier == "BRONZE":
-        rank_color = discord.Color.from_rgb(205, 127, 50)
-    elif tier == "SILVER":
-        rank_color = discord.Color.from_rgb(192, 192, 192)
-    elif tier == "GOLD":
-        rank_color = discord.Color.from_rgb(255, 215, 0)
-    elif tier == "PLATINUM":
-        rank_color = discord.Color.from_rgb(0, 200, 225)
-    elif tier == "DIAMOND":
-        rank_color = discord.Color.from_rgb(0, 100, 200)
-    elif tier == "MASTER":
-        rank_color = discord.Color.from_rgb(128, 0, 128)
-    elif tier == "GRANDMASTER":
-        rank_color = discord.Color.from_rgb(255, 0, 0)
-    elif tier == "CHALLENGER":
-        rank_color = discord.Color.from_rgb(0, 200, 225)
-    else:
-        rank_color = discord.Color.default()    
-
-
-    embed = discord.Embed(
-        title="LoL Solo Rank" ,
-        color=rank_color
-    )
-
-    embed.add_field(
-        name="ランク",
-        value=solo_rank["tier"] + " " + solo_rank["rank"],
-        inline=False
-    )
-
-    embed.add_field(
-        name="LP",
-        value=str(solo_rank["leaguePoints"]),
-        inline=True
-    )
-
-    embed.add_field(
-        name="勝利",
-        value=str(wins),
-        inline=True
-    )
-
-    embed.add_field(
-        name="敗北",
-        value=str(losses),
-        inline=True
-    )
-
-    embed.add_field(
-        name="勝率",
-        value=str(round(win_rate, 1)) + "%",
-        inline=True
-    )
-
-    if flex_rank is not None:
-        embed.add_field(
-            name="Flex Queue",
-            value=(
-                flex_rank["tier"] + " " + flex_rank["rank"] + "\n"
-                + str(flex_rank["leaguePoints"]) + " LP\n"
-                + str(flex_wins) + "勝" + str(flex_losses) + "敗\n"
-                + "勝率: " + str(round(flex_win_rate, 1)) + "%"
-
-            ),
-            inline=False
-        )
-    else:
-        embed.add_field(
-            name="Flex Queue",
-            value ="ランクなし",
-            inline=Flase
-
-        )
-    return embed
-
-
-
-
-def create_recent_embed(summary, recent_message):
-    embed = discord.Embed(
-        title="LoL Recent Matches",
-        description=summary + recent_message,
-        color=discord.Color.blue()
-
-    )
-    return embed
 
 
 
@@ -351,12 +231,10 @@ async def on_message(message):
         await message.channel.send(count_message)    
     # 使えるコマンド一覧を返す
     if message.content == "!help":
-        help_embed = create_help_message()
+        help_embed = embeds.create_help_embed()
         await message.channel.send(embed=help_embed)
     
         
-
-        await message.channel.send(help_message)
     
     if message.content.startswith("!github"):
         user_name = message.content.replace("!github", "").strip()
@@ -432,7 +310,7 @@ async def on_message(message):
                         
 
                 if solo_rank is not None:
-                    rank_embed = create_rank_embed(solo_rank, flex_rank)
+                    rank_embed = embeds.create_rank_embed(solo_rank, flex_rank)
 
                     await message.channel.send(embed=rank_embed)
                     
@@ -655,7 +533,7 @@ async def on_message(message):
                     + "敗\n\n"
 
                 )    
-                recent_embed = create_recent_embed(summary, recent_message)
+                recent_embed = embeds.create_recent_embed(summary, recent_message)
 
 
                 await message.channel.send(embed=recent_embed)                    
@@ -725,10 +603,8 @@ async def on_message(message):
 
                 number = number + 1
 
-            mastery_embed = discord.Embed(
-                title="LoL Champion Mastery",
-                description=mastery_message,
-                color=discord.Color.blue()
+            mastery_embed = embeds.create_mastery_embed(
+                mastery_message
 
             )
 
@@ -926,70 +802,19 @@ async def on_message(message):
                     
 
 
-                    stats_embed = discord.Embed(
-                        title="LoL Recent Stats",
-                        color=discord.Color.blue()
-
+                    stats_embed = embeds.create_stats_embed(
+                        games_count,
+                        wins_count,
+                        losses_count,
+                        recent_result,
+                        average_kills,
+                        average_deaths,
+                        average_assists,
+                        average_cs,
+                        win_rate,
+                        champion_message,
+                        top_champion_message
                     )
-
-                    stats_embed.add_field(
-                        name="直近試合",
-                        value=str(games_count)+ "試合",
-
-                            
-                        inline=False
-                    )
-                    stats_embed.add_field(
-                        name="直近成績",
-                        value=(
-                            str(wins_count)
-                            + "勝"
-                            +str(losses_count)
-                            + "敗 ("
-                            + recent_result
-                            +") "
-
-                        ),
-                        inline=False
-                    )
-
-                    stats_embed.add_field(
-                        name="平均KDA",
-                        value=(
-                            str(round(average_kills, 1))
-                            + " / "
-                            +str(round(average_deaths, 1))
-                            + " / "
-                            +str(round(average_assists, 1))
-
-                        ),
-                        inline=False
-
-                    )   
-
-                    stats_embed.add_field(
-                        name="平均CS",
-                        value=str(round(average_cs, 1)),
-                        inline=False
-                    )
-
-                    stats_embed.add_field(
-                        name="勝率",
-                        value=str(round(win_rate,1)) + "%",
-                        inline=False
-                    )
-                    stats_embed.add_field(
-                        name="使用チャンピオン",
-                        value=champion_message,
-                        inline=False
-                    )
-                    stats_embed.add_field(
-                        name="最多使用",
-                        value=top_champion_message,
-                        inline=False
-
-                    )
-
 
                     await message.channel.send(embed=stats_embed)
 
@@ -1081,25 +906,11 @@ async def on_message(message):
 
                 enemy_message += champion_name + "\n"    
 
-            ingame_embed = discord.Embed(
-                title="LoL In-Game",
-                color=discord.Color.blue()
-
-            )   
-
-            ingame_embed.add_field(
-                name="味方チーム",
-                value=ally_message,
-                inline=False
-
+            ingame_embed = embeds.create_ingame_embed(
+                ally_message,
+                enemy_message
             )
-            ingame_embed.add_field(
-                name="敵チーム",
-                value=enemy_message,
-                inline=False
-            )
-
-            await message.channel.send(embed=ingame_embed) 
+            await message.channel.send(embed=ingame_embed)
 
 
 
