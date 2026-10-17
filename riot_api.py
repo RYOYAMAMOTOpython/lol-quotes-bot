@@ -91,4 +91,33 @@ def get_ingame_data(puuid, headers):
 
     ingame_response = requests.get(ingame_url, headers=headers)
 
-    return ingame_response    
+    return ingame_response
+
+def get_champion_map():
+    version_response = requests.get(
+        "https://ddragon.leagueoflegends.com/api/versions.json"
+
+    )
+
+    latest_version = version_response.json()[0]
+
+    champion_url = (
+        "https://ddragon.leagueoflegends.com/cdn/"
+        + latest_version
+        + "/data/ja_JP/champion.json"
+
+    )
+
+
+    champion_response = requests.get(champion_url)
+    champion_data = champion_response.json()
+
+    champion_map ={}
+
+    for champion in champion_data["data"].values():
+        champion_id = int(champion["key"])
+        champion_name = champion["name"]
+
+        champion_map[champion_id] = champion_name
+
+    return champion_map

@@ -244,35 +244,6 @@ def create_recent_embed(summary, recent_message):
     return embed
 
 
-def get_champion_map():
-    version_response = requests.get(
-        "https://ddragon.leagueoflegends.com/api/versions.json"
-
-    )
-
-    latest_version = version_response.json()[0]
-
-    champion_url = (
-        "https://ddragon.leagueoflegends.com/cdn/"
-        + latest_version
-        + "/data/ja_JP/champion.json"
-
-    )
-
-
-    champion_response = requests.get(champion_url)
-    champion_data = champion_response.json()
-
-    champion_map ={}
-
-    for champion in champion_data["data"].values():
-        champion_id = int(champion["key"])
-        champion_name = champion["name"]
-
-        champion_map[champion_id] = champion_name
-
-    return champion_map
-
 
 
 def create_help_message():
@@ -422,8 +393,7 @@ async def on_message(message):
 
         game_name, tag_line = riot_id.rsplit("#", 1)
 
-        print("ゲーム名:", game_name)
-        print("タグ:", tag_line)
+       
 
         
         headers = {
@@ -445,19 +415,16 @@ async def on_message(message):
 
             rank_response = riot_api.get_rank_data(puuid, headers)
 
-            print("ランク取得:", rank_response.status_code)
-
+           
             if rank_response.status_code == 200:
                 rank_data = rank_response.json()
 
-                print([rank_info.get("queueType") for rank_info in rank_data])
-
+               
                 solo_rank = find_solo_rank(rank_data)
 
                 flex_rank = find_flex_rank(rank_data)
 
-                print("Solo Rank:", solo_rank)
-                print("Flex Rank:", flex_rank)
+                
                     
                     
                 
@@ -577,16 +544,16 @@ async def on_message(message):
                 recent_message = ""
                 number = 1
                 
-                champion_map = get_champion_map()
+                champion_map = riot_api.get_champion_map()
 
                 for match_id in match_ids:
                     match_data_response = riot_api.get_match_data(match_id, headers)
 
                     timeline_response = riot_api.get_match_timeline(match_id, headers)
 
-                    print("タイムライン取得:", timeline_response.status_code)
+                    
 
-                    if match_data_response.status_code == 200:
+                    if timeline_response.status_code == 200:
                         match_data = match_data_response.json()
                         
 
@@ -598,14 +565,7 @@ async def on_message(message):
                             if participant["puuid"] == puuid:
                                 player_data = participant
                                 break
-                        print("PUUID一致:", any(
-                            participant["puuid"] == puuid
-                            for participant in participants
-
-                        ))
-
-                        print("自分PUUID:", repr(puuid))
-                        print("参加者1人目PUUID:", repr(participants[0]["puuid"]))            
+                                   
 
                         if player_data is not None:
                             if player_data["win"]:
@@ -624,11 +584,7 @@ async def on_message(message):
                             participant_id = str(player_data["participantId"])
                         
                             participant_frame = last_frame["participantFrames"][participant_id]
-                            print("participant_frameのキー:")
-                            print(participant_frame.keys())
-                            print("minionsKilled:", participant_frame.get("minionsKiled", "キーなし"))
-                            print("jungleminionsKilled:" , participant_frame.get("jungleMinionsKiled", "キーなし"))
-
+                           
 
                             
 
@@ -636,18 +592,13 @@ async def on_message(message):
                             
                             game_duration = match_data["info"]["gameDuration"]
 
-                            print("ミニオンCS:", player_data.get("totalMinionsKiled", "キーなし"))
-                            print("ジャングルCS:", player_data.get("neutralMinionsKiled","キーなし"))
-                            print("ゲームモード:", match_data["info"].get("gameMode"))
-                            print("キューID:", match_data["info"].get("queueID"))
-
 
                             minions_cs = participant_frame.get("minionsKilled", 0)
                             jungle_cs = participant_frame.get("jungleMinionsKilled",0)
 
                             cs = minions_cs + jungle_cs
 
-                            print("Timeline CS:", cs)
+                            
 
                             game_duration = match_data["info"]["gameDuration"]
                             minutes = game_duration // 60
@@ -752,11 +703,11 @@ async def on_message(message):
 
 
             mastery_response = riot_api.get_mastery_data(puuid, headers)
-            print("Mastery取得:", mastery_response.status_code)
+            
 
             mastery_data = mastery_response.json()
             
-            champion_map = get_champion_map()
+            champion_map = riot_api.get_champion_map()
             
             mastery_message = ""
             number = 1
@@ -807,7 +758,7 @@ async def on_message(message):
 
             match_response = riot_api.get_recent_match_ids(puuid, headers)
 
-            print("Stats用Match取得:", match_response.status_code)
+           
 
             if match_response.status_code == 200:
                 match_ids = match_response.json()
@@ -826,7 +777,7 @@ async def on_message(message):
                 for match_id in match_ids:
                     match_data_response = riot_api.get_match_data(match_id, headers)
 
-                    print("試合詳細取得:", match_data_response.status_code)
+                    
 
 
                     player_data = None
@@ -834,10 +785,6 @@ async def on_message(message):
                     if match_data_response.status_code == 200:
                         match_data = match_data_response.json()
                         participants = match_data["info"]["participants"]
-
-                        print("PUUID一致判定:", puuid in [p["puuid"] for p in participants])
-                        print("自分PUUID先頭:", repr(puuid[:15]))
-                        print("参加者1人目先頭:", repr(participants[0]["puuid"][:15]))
 
 
                         
@@ -847,7 +794,7 @@ async def on_message(message):
                                 player_data = participant
                                 break
 
-                        print("player_data:", player_data is not None)
+                        
                         if player_data is not None:
                             total_kills += player_data["kills"]
                             total_deaths += player_data["deaths"]
@@ -890,14 +837,7 @@ async def on_message(message):
 
                     games_count += 1    
 
-                print("集計できた試合数:", games_count)
-                print("合計K:", total_kills)
-                print("合計D:", total_deaths)
-                print("合計A:", total_assists)
-                print("合計CS:", total_cs)
-
-                print("champion_count:", champion_counts)
-                print("champion_wins:", champion_wins)
+                
                 if games_count > 0:
                     average_kills = total_kills / games_count
                     average_deaths = total_deaths / games_count
@@ -919,7 +859,7 @@ async def on_message(message):
                         reverse=True
                     )
 
-                    champion_map = get_champion_map()
+                    champion_map = riot_api.get_champion_map()
 
                     champion_message = ""
                     number = 1
@@ -1084,7 +1024,7 @@ async def on_message(message):
                 headers
             )
 
-            print("In-Game取得:", ingame_response.status_code)
+            
 
             if ingame_response.status_code == 404:
                 await message.channel.send(
@@ -1093,13 +1033,13 @@ async def on_message(message):
                 )
                 return
             if ingame_response.status_code == 200:
-                print("200の中に入った")
+               
 
                 ingame_data = ingame_response.json()
-                print("ingame_dataのキー:", ingame_data.keys())
+               
 
                 participants = ingame_data["participants"]
-                print("参加者:", len(participants))
+                
 
                 my_team_id = None
 
@@ -1116,10 +1056,9 @@ async def on_message(message):
                     else:
                         enemy_team.append(participant)
 
-            print("味方人数:", len(ally_team))
-            print("敵人数:", len(enemy_team))
+           
             
-            champion_map = get_champion_map()
+            champion_map = riot_api.get_champion_map()
             ally_message = ""
             enemy_message = ""
             
