@@ -2,6 +2,7 @@ import os
 import json
 import random
 import requests
+import riot_api
 import discord
 from dotenv import load_dotenv
 
@@ -37,27 +38,7 @@ def find_flex_rank(rank_data):
     return None        
 
 
-def get_riot_account(game_name, tag_line, headers):
-    account_url = (
-        "https://asia.api.riotgames.com"
-        + "/riot/account/v1/accounts/by-riot-id/"
-        + game_name
-        + "/"
-        + tag_line
 
-    )
-    account_response = requests.get(account_url, headers=headers)
-    return account_response
-
-def get_rank_data(puuid, headers):
-    rank_url = (
-        "https://jp1.api.riotgames.com"
-        + "/lol/league/v4/entries/by-puuid/"
-        + puuid
-
-    )
-    rank_response = requests.get(rank_url, headers=headers)
-    return rank_response
 
 def calculate_win_rate(wins, losses):
     total_games = wins + losses
@@ -250,48 +231,8 @@ def create_rank_embed(solo_rank, flex_rank):
         )
     return embed
 
-def get_recent_match_ids(puuid, headers):
-    match_url = (
-        "https://asia.api.riotgames.com"
-        + "/lol/match/v5/matches/by-puuid/"
-        + puuid
-        + "/ids?start=0&count=5"
-
-    )
-
-    print(repr(match_url))
-
-    match_response = requests.get(match_url, headers=headers)
-
-    print("recent取得:", match_response.status_code)
-    print(match_response.text)
 
 
-    return match_response
-
-def get_match_data(match_id, headers):
-    match_url = (
-        "https://asia.api.riotgames.com"
-        + "/lol/match/v5/matches/"
-        + match_id
-
-    )   
-
-    match_response = requests.get(match_url, headers=headers)
-    return match_response
-
-def get_match_timeline(match_id, headers):
-    timeline_url = (
-        "https://asia.api.riotgames.com"
-        + "/lol/match/v5/matches/"
-        + match_id 
-        + "/timeline"
-
-    )
-
-    timeline_response = requests.get(timeline_url, headers=headers)
-
-    return timeline_response
 
 def create_recent_embed(summary, recent_message):
     embed = discord.Embed(
@@ -302,16 +243,6 @@ def create_recent_embed(summary, recent_message):
     )
     return embed
 
-def get_mastery_data(puuid, headers):
-    mastery_url = (
-        "https://jp1.api.riotgames.com"
-        + "/lol/champion-mastery/v4/champion-masteries/by-puuid/"
-        + puuid
-        
-    )
-
-    mastery_response = requests.get(mastery_url, headers=headers)
-    return mastery_response
 
 def get_champion_map():
     version_response = requests.get(
@@ -342,16 +273,7 @@ def get_champion_map():
 
     return champion_map
 
-def get_ingame_data(puuid, headers):
-    ingame_url = (
-        "https://jp1.api.riotgames.com"
-        + "/lol/spectator/v5/active-games/by-summoner/"
-        + puuid
-    )
 
-    ingame_response = requests.get(ingame_url, headers=headers)
-
-    return ingame_response
 
 def create_help_message():
     embed = discord.Embed(
@@ -510,7 +432,7 @@ async def on_message(message):
     
         }
 
-        account_response = get_riot_account(game_name, tag_line, headers)
+        account_response = riot_api.get_riot_account(game_name, tag_line, headers)
 
 
 
@@ -521,7 +443,7 @@ async def on_message(message):
 
             puuid = account_data["puuid"]
 
-            rank_response = get_rank_data(puuid, headers)
+            rank_response = riot_api.get_rank_data(puuid, headers)
 
             print("ランク取得:", rank_response.status_code)
 
@@ -634,14 +556,14 @@ async def on_message(message):
 
         }
 
-        account_response = get_riot_account(game_name, tag_line, headers)
+        account_response = riot_api.get_riot_account(game_name, tag_line, headers)
 
         if account_response.status_code == 200:
             account_data = account_response.json()
 
             puuid = account_data["puuid"]
 
-            match_response = get_recent_match_ids(puuid, headers)
+            match_response = riot_api.get_recent_match_ids(puuid, headers)
 
             if match_response.status_code == 200:
                 match_ids = match_response.json()
@@ -658,9 +580,9 @@ async def on_message(message):
                 champion_map = get_champion_map()
 
                 for match_id in match_ids:
-                    match_data_response = get_match_data(match_id, headers)
+                    match_data_response = riot_api.get_match_data(match_id, headers)
 
-                    timeline_response = get_match_timeline(match_id, headers)
+                    timeline_response = riot_api.get_match_timeline(match_id, headers)
 
                     print("タイムライン取得:", timeline_response.status_code)
 
@@ -822,14 +744,14 @@ async def on_message(message):
 
         }
 
-        account_response = get_riot_account(game_name, tag_line, headers)
+        account_response = riot_api.get_riot_account(game_name, tag_line, headers)
 
         if account_response.status_code == 200:
             account_data = account_response.json()
             puuid = account_data["puuid"]
 
 
-            mastery_response = get_mastery_data(puuid, headers)
+            mastery_response = riot_api.get_mastery_data(puuid, headers)
             print("Mastery取得:", mastery_response.status_code)
 
             mastery_data = mastery_response.json()
@@ -877,13 +799,13 @@ async def on_message(message):
             "X-Riot-Token": RIOT_API_KEY
 
         }
-        account_response = get_riot_account(game_name, tag_line, headers)
+        account_response = riot_api.get_riot_account(game_name, tag_line, headers)
 
         if account_response.status_code == 200:
             account_data = account_response.json()
             puuid = account_data["puuid"]
 
-            match_response = get_recent_match_ids(puuid, headers)
+            match_response = riot_api.get_recent_match_ids(puuid, headers)
 
             print("Stats用Match取得:", match_response.status_code)
 
@@ -902,7 +824,7 @@ async def on_message(message):
 
 
                 for match_id in match_ids:
-                    match_data_response = get_match_data(match_id, headers)
+                    match_data_response = riot_api.get_match_data(match_id, headers)
 
                     print("試合詳細取得:", match_data_response.status_code)
 
@@ -945,7 +867,7 @@ async def on_message(message):
                                 champion_wins[champion_id] += 1
                                 wins_count += 1
 
-                            timeline_response = get_match_timeline(match_id, headers)    
+                            timeline_response = riot_api.get_match_timeline(match_id, headers)    
                     
                                       
 
@@ -1147,7 +1069,7 @@ async def on_message(message):
 
         }
 
-        account_response = get_riot_account(
+        account_response = riot_api.get_riot_account(
             game_name,
             tag_line,
             headers
@@ -1157,7 +1079,7 @@ async def on_message(message):
             account_data = account_response.json()
             puuid = account_data["puuid"]
 
-            ingame_response = get_ingame_data(
+            ingame_response = riot_api.get_ingame_data(
                 puuid,
                 headers
             )
