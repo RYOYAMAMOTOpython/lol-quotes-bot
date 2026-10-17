@@ -29,6 +29,14 @@ def find_solo_rank(rank_data):
             return rank_info
     return None
 
+def find_flex_rank(rank_data):
+    for queue in rank_data:
+        if queue["queueType"] == "RANKED_FLEX_SR":
+            return queue
+
+    return None        
+
+
 def get_riot_account(game_name, tag_line, headers):
     account_url = (
         "https://asia.api.riotgames.com"
@@ -147,11 +155,16 @@ def create_help_message():
 
     return help_message
 
-def create_rank_embed(solo_rank):
+def create_rank_embed(solo_rank, flex_rank):
     wins = solo_rank["wins"]
     losses = solo_rank["losses"]
 
     win_rate = calculate_win_rate(wins, losses)
+
+    if flex_rank is not None:
+        flex_wins = flex_rank["wins"]
+        flex_losses = flex_rank["losses"]
+        flex_win_rate = calculate_win_rate(flex_wins, flex_losses)
 
 
     tier = solo_rank["tier"]
@@ -216,6 +229,25 @@ def create_rank_embed(solo_rank):
         inline=True
     )
 
+    if flex_rank is not None:
+        embed.add_field(
+            name="Flex Queue",
+            value=(
+                flex_rank["tier"] + " " + flex_rank["rank"] + "\n"
+                + str(flex_rank["leaguePoints"]) + " LP\n"
+                + str(flex_wins) + "勝" + str(flex_losses) + "敗\n"
+                + "勝率: " + str(round(flex_win_rate, 1)) + "%"
+
+            ),
+            inline=False
+        )
+    else:
+        embed.add_field(
+            name="Flex Queue",
+            value ="ランクなし",
+            inline=Flase
+
+        )
     return embed
 
 def get_recent_match_ids(puuid, headers):
@@ -308,7 +340,18 @@ def get_champion_map():
 
         champion_map[champion_id] = champion_name
 
-    return champion_map    
+    return champion_map
+
+def get_ingame_data(puuid, headers):
+    ingame_url = (
+        "https://jp1.api.riotgames.com"
+        + "/lol/spectator/v5/active-games/by-summoner/"
+        + puuid
+    )
+
+    ingame_response = requests.get(ingame_url, headers=headers)
+
+    return ingame_response        
 
 
 
@@ -442,6 +485,11 @@ async def on_message(message):
                 print([rank_info.get("queueType") for rank_info in rank_data])
 
                 solo_rank = find_solo_rank(rank_data)
+
+                flex_rank = find_flex_rank(rank_data)
+
+                print("Solo Rank:", solo_rank)
+                print("Flex Rank:", flex_rank)
                     
                     
                 
@@ -449,7 +497,7 @@ async def on_message(message):
                         
 
                 if solo_rank is not None:
-                    rank_embed = create_rank_embed(solo_rank)
+                    rank_embed = create_rank_embed(solo_rank, flex_rank)
 
                     await message.channel.send(embed=rank_embed)
                     
@@ -582,6 +630,14 @@ async def on_message(message):
                             if participant["puuid"] == puuid:
                                 player_data = participant
                                 break
+                        print("PUUID一致:", any(
+                            participant["puuid"] == puuid
+                            for participant in participants
+
+                        ))
+
+                        print("自分PUUID:", repr(puuid))
+                        print("参加者1人目PUUID:", repr(participants[0]["puuid"]))            
 
                         if player_data is not None:
                             if player_data["win"]:
@@ -758,6 +814,391 @@ async def on_message(message):
             )
 
             await message.channel.send(embed=mastery_embed)    
+
+    if message.content.startswith("!stats"):
+        riot_id = message.content.replace("!stats", "").strip()
+
+        if "#" not in riot_id:
+            await message.channel.send(
+                "使い方: !stats ゲーム名#タグ"
+
+            )
+            return
+
+        game_name, tag_line = riot_id.rsplit("#", 1)
+
+        headers = {
+            "X-Riot-Token": RIOT_API_KEY
+
+        }
+        account_response = get_riot_account(game_name, tag_line, headers)
+
+        if account_response.status_code == 200:
+            account_data = account_response.json()
+            puuid = account_data["puuid"]
+
+            match_response = get_recent_match_ids(puuid, headers)
+
+            print("Stats用Match取得:", match_response.status_code)
+
+            if match_response.status_code == 200:
+                match_ids = match_response.json()
+
+                total_kills = 0
+                total_deaths = 0
+                total_assists = 0
+                total_cs = 0
+                wins_count = 0
+                games_count = 0
+
+                champion_counts ={}
+                champion_wins = {}
+
+
+                for match_id in match_ids:
+                    match_data_response = get_match_data(match_id, headers)
+
+                    print("試合詳細取得:", match_data_response.status_code)
+
+
+                    player_data = None
+
+                    if match_data_response.status_code == 200:
+                        match_data = match_data_response.json()
+                        participants = match_data["info"]["participants"]
+
+                        print("PUUID一致判定:", puuid in [p["puuid"] for p in participants])
+                        print("自分PUUID先頭:", repr(puuid[:15]))
+                        print("参加者1人目先頭:", repr(participants[0]["puuid"][:15]))
+
+
+                        
+
+                        for participant in participants:
+                            if participant["puuid"] == puuid:
+                                player_data = participant
+                                break
+
+                        print("player_data:", player_data is not None)
+                        if player_data is not None:
+                            total_kills += player_data["kills"]
+                            total_deaths += player_data["deaths"]
+                            total_assists += player_data["assists"]
+                            champion_id = player_data["championId"]
+
+                            if champion_id in champion_counts:
+                                champion_counts[champion_id] += 1
+
+                            else:
+                                champion_counts[champion_id] = 1
+
+                            if champion_id not in champion_wins:
+                                champion_wins[champion_id] = 0
+
+                            if player_data["win"]:
+                                champion_wins[champion_id] += 1
+                                wins_count += 1
+
+                            timeline_response = get_match_timeline(match_id, headers)    
+                    
+                                      
+
+                    if timeline_response.status_code == 200:
+                        timeline_data = timeline_response.json()
+
+                        frames = timeline_data["info"]["frames"]
+                        last_frame = frames[-1]
+
+                        participant_id = str(player_data["participantId"])
+
+                        participant_frame = last_frame["participantFrames"][participant_id]
+
+                        minions_cs = participant_frame.get("minionsKilled", 0)
+
+                        jungle_cs = participant_frame.get("jungleMinionsKilled", 0)
+
+                        cs = minions_cs + jungle_cs
+                        total_cs += cs
+
+                    games_count += 1    
+
+                print("集計できた試合数:", games_count)
+                print("合計K:", total_kills)
+                print("合計D:", total_deaths)
+                print("合計A:", total_assists)
+                print("合計CS:", total_cs)
+
+                print("champion_count:", champion_counts)
+                print("champion_wins:", champion_wins)
+                if games_count > 0:
+                    average_kills = total_kills / games_count
+                    average_deaths = total_deaths / games_count
+                    average_assists = total_assists / games_count
+                    average_cs = total_cs / games_count
+
+                    win_rate = wins_count / games_count * 100
+                    losses_count = games_count - wins_count
+                    if wins_count > losses_count:
+                        recent_result = "勝ち越し"
+                    elif wins_count < losses_count:
+                        recent_result = "負け越し"
+                    else:
+                        recent_result = "五分"     
+
+                    sorted_champions = sorted(
+                        champion_counts.items(),
+                        key=lambda item: item[1],
+                        reverse=True
+                    )
+
+                    champion_map = get_champion_map()
+
+                    champion_message = ""
+                    number = 1
+
+                    for champion_id, count in sorted_champions:
+                        champion_name = champion_map.get(
+                            champion_id,
+                            str(champion_id)
+                        )
+                            
+
+                        champion_win_count = champion_wins.get(champion_id, 0)
+                        champion_loss_count = count - champion_win_count
+                        champion_win_rate = champion_win_count / count * 100
+
+                        champion_message += (
+                            str(number)
+                            +". "
+                            +champion_name
+                            + " "
+                            +str(count)
+                            + "試合 "
+                            +str(champion_win_count)
+                            + "勝"
+                            +str(champion_loss_count)
+                            + "敗 "
+                            + "勝率"
+                            +str(round(champion_win_rate, 1))
+                            + "%\n"
+
+
+                        )
+
+                        number += 1
+
+                    top_champion_count = sorted_champions[0][1]
+                    top_champion_names =[]
+
+                    for champion_id, count in sorted_champions:
+                        if count == top_champion_count:
+                            champion_name = champion_map.get(
+                                champion_id,
+                                str(champion_id)
+                            )
+                            top_champion_names.append(champion_name)
+
+                    if len(top_champion_names) == 1:
+                        top_champion_message = (
+                            top_champion_names[0]
+                            +" ("
+                            +str(top_champion_count)
+                            + "試合) "
+
+                            
+                        )
+                    else:
+                        top_champion_message = (
+                            " / " .join(top_champion_names)
+                            + " (各"
+                            +str(top_champion_count)
+                            + "試合) "
+                        )            
+
+                    
+
+
+                    stats_embed = discord.Embed(
+                        title="LoL Recent Stats",
+                        color=discord.Color.blue()
+
+                    )
+
+                    stats_embed.add_field(
+                        name="直近試合",
+                        value=str(games_count)+ "試合",
+
+                            
+                        inline=False
+                    )
+                    stats_embed.add_field(
+                        name="直近成績",
+                        value=(
+                            str(wins_count)
+                            + "勝"
+                            +str(losses_count)
+                            + "敗 ("
+                            + recent_result
+                            +") "
+
+                        ),
+                        inline=False
+                    )
+
+                    stats_embed.add_field(
+                        name="平均KDA",
+                        value=(
+                            str(round(average_kills, 1))
+                            + " / "
+                            +str(round(average_deaths, 1))
+                            + " / "
+                            +str(round(average_assists, 1))
+
+                        ),
+                        inline=False
+
+                    )   
+
+                    stats_embed.add_field(
+                        name="平均CS",
+                        value=str(round(average_cs, 1)),
+                        inline=False
+                    )
+
+                    stats_embed.add_field(
+                        name="勝率",
+                        value=str(round(win_rate,1)) + "%",
+                        inline=False
+                    )
+                    stats_embed.add_field(
+                        name="使用チャンピオン",
+                        value=champion_message,
+                        inline=False
+                    )
+                    stats_embed.add_field(
+                        name="最多使用",
+                        value=top_champion_message,
+                        inline=False
+
+                    )
+
+
+                    await message.channel.send(embed=stats_embed)
+
+    if message.content.startswith("!ingame"):
+        riot_id = message.content.replace("!ingame", "").strip()
+
+        if "#" not in riot_id:
+            await message.channel.send(
+                "使い方: !ingame ゲーム名#タグ"
+            
+            )
+            return
+        game_name, tag_line = riot_id.rsplit("#", 1)
+
+        headers = {
+            "X-Riot-Token": RIOT_API_KEY
+
+        }
+
+        account_response = get_riot_account(
+            game_name,
+            tag_line,
+            headers
+        )
+
+        if account_response.status_code == 200:
+            account_data = account_response.json()
+            puuid = account_data["puuid"]
+
+            ingame_response = get_ingame_data(
+                puuid,
+                headers
+            )
+
+            print("In-Game取得:", ingame_response.status_code)
+
+            if ingame_response.status_code == 404:
+                await message.channel.send(
+                    "現在試合中ではありません"
+
+                )
+                return
+            if ingame_response.status_code == 200:
+                print("200の中に入った")
+
+                ingame_data = ingame_response.json()
+                print("ingame_dataのキー:", ingame_data.keys())
+
+                participants = ingame_data["participants"]
+                print("参加者:", len(participants))
+
+                my_team_id = None
+
+                for participant in participants:
+                    if participant["puuid"] == puuid:
+                        my_team_id = participant["teamId"]
+                        break
+                ally_team =[]
+                enemy_team = []
+
+                for participant in participants:
+                    if participant["teamId"] == my_team_id:
+                        ally_team.append(participant)
+                    else:
+                        enemy_team.append(participant)
+
+            print("味方人数:", len(ally_team))
+            print("敵人数:", len(enemy_team))
+            
+            champion_map = get_champion_map()
+            ally_message = ""
+            enemy_message = ""
+            
+            for participant in ally_team:
+                champion_name = champion_map.get(
+                    participant["championId"],
+                    str(participant["championId"])
+
+
+
+                )
+                ally_message += champion_name + "\n"
+                
+            for participant in enemy_team:
+                champion_name = champion_map.get(
+                    participant["championId"],
+                    str(participant["championId"])
+
+                )
+
+                enemy_message += champion_name + "\n"    
+
+            ingame_embed = discord.Embed(
+                title="LoL In-Game",
+                color=discord.Color.blue()
+
+            )   
+
+            ingame_embed.add_field(
+                name="味方チーム",
+                value=ally_message,
+                inline=False
+
+            )
+            ingame_embed.add_field(
+                name="敵チーム",
+                value=enemy_message,
+                inline=False
+            )
+
+            await message.channel.send(embed=ingame_embed) 
+
+
+
+
+
+
 
                
 
