@@ -351,7 +351,52 @@ def get_ingame_data(puuid, headers):
 
     ingame_response = requests.get(ingame_url, headers=headers)
 
-    return ingame_response        
+    return ingame_response
+
+def create_help_message():
+    embed = discord.Embed(
+        title="LoL Bot Help",
+        color=discord.Color.blue()
+
+    )
+    embed.add_field(
+        name="Quote Commands",
+        value=(
+            "!quote <champ>\n"
+            "!quote random\n"
+            "!quote list <champ>\n"
+            "!champions\n"
+            "!count"
+
+        ),
+        inline=False
+
+    )
+
+    embed.add_field(
+        name="Riot Commands",
+        value=(
+            "!rank <name#tag>\n"
+            "!recent <name#tag>\n"
+            "!mastery <name#tag>\n"
+            "!stats <name#tag>\n"
+            "!ingame <name#tag>\n"
+
+            
+        ),
+
+    inline=False    
+    )
+
+    embed.add_field(
+        name="Other",
+        value="!github <username>",
+        inline=False
+    )
+
+    return embed
+
+
 
 
 
@@ -413,7 +458,8 @@ async def on_message(message):
         await message.channel.send(count_message)    
     # 使えるコマンド一覧を返す
     if message.content == "!help":
-        help_message = create_help_message()
+        help_embed = create_help_message()
+        await message.channel.send(embed=help_embed)
     
         
 
