@@ -5,7 +5,15 @@ import requests
 import riot_api
 import discord
 import embeds
+import logging
 from dotenv import load_dotenv
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+
+)
 
 # .envファイルを読み込む
 load_dotenv(override=True)
@@ -57,8 +65,8 @@ def get_github_user(user_name):
 # Botが起動してDiscordにログインしたときに実行される
 @client.event
 async def on_ready():
-    print("Botがログインしました")
-    print(client.user)
+    logging.info("Botがログインしました")
+    logging.info(client.user)
 
 
 
@@ -191,9 +199,47 @@ def get_puuid(game_name, tag_line, headers):
 
     if account_response.status_code == 200:
         account_data = account_response.json()
-        return account_data["puuid"]
+        return account_data["puuid"], 200
 
-    return None     
+    return None, account_response.status_code
+def get_puuid(game_name, tag_line, headers):
+    account_response = riot_api.get_riot_account(
+        game_name,
+        tag_line,
+        headers
+    )
+    if account_response.status_code == 200:
+        account_data = account_response.json()
+        return account_data["puuid"], 200
+    
+    return None, account_response.status_code
+
+
+async def send_account_error(channel, account_status):
+    if account_status == 401:
+        await channel.send(
+            "Riot APIキーが無効、または期限切れです"
+        )
+
+    elif account_status == 403:
+        await channel.send(
+            "Riot APIへのアクセスが拒否されました"
+        )
+
+    elif account_status == 404:
+        await channel.send(
+            "そのRiot IDは見つかりませんでした"
+        )
+
+    elif account_status == 429:
+        await channel.send(
+            "Riot APIへのアクセスが多すぎます。少し待ってから試してください"
+        )
+
+    else:
+        await channel.send(
+            "アカウント情報の取得に失敗しました"
+        )
 
 # Discordにメッセージが送られた時に実行される
 @client.event
@@ -300,18 +346,19 @@ async def on_message(message):
     
         
 
-        puuid = get_puuid(
+        puuid, account_status = get_puuid(
             game_name,
             tag_line,
             headers
         )
 
         if puuid is None:
-            await message.channel.send(
-                "アカウント情報を取得できませんでした"
-
+            await send_account_error(
+                message.channel,
+                account_status
             )
             return
+
         rank_response = riot_api.get_rank_data(
             puuid,
             headers
@@ -321,56 +368,40 @@ async def on_message(message):
 
             solo_rank = find_solo_rank(rank_data)
             flex_rank = find_flex_rank(rank_data)
-                
-                    
-                    
-                
-                        
-                        
 
             if solo_rank is not None:
-                rank_embed = embeds.create_rank_embed(solo_rank, flex_rank)
+                rank_embed = embeds.create_rank_embed(
+                    solo_rank,
+                    flex_rank
+                )
 
                 await message.channel.send(embed=rank_embed)
-                    
-                    
 
             else:
-                await message.channel.send("このプレイヤーはソロランクをしていません"
-
-
+                await message.channel.send(
+                    "このプレイヤーはソロランクをしていません"
                 )
-                
         elif rank_response.status_code == 401:
             await message.channel.send(
-                "Riot APIキーが無効です、期限切れの可能性があります\n"
-                "Developer Portalで新しいAPIキーに更新してください"
+                "Riot APIキーが無効です、期限切れの可能性があります"
 
             )
-                
-                        
-
         elif rank_response.status_code == 429:
             await message.channel.send(
-                "Riot APIへのアクセス回数が多すぎます\n"
-                "少し時間を空けてからもう一度試してください"
-
-            )
-                        
-                        
+                "Riot APIへのアクセス回数が多すぎます"
+            )                   
         elif rank_response.status_code == 403:
             await message.channel.send(
-                "ランク情報へのアクセスが拒否されました\n"
-                "APIキーやURLを確認してください"
-
+                "ランク情報へのアクセスが拒否されました"
             )
         else:
             await message.channel.send(
                 "ランク情報の取得に失敗しました\n"
                 + "ステータスコード: "
                 + str(rank_response.status_code)
-
-            )
+            )        
+        
+            
 
         
 
@@ -390,16 +421,19 @@ async def on_message(message):
 
         headers = get_riot_headers()
 
-        puuid = get_puuid(
+        puuid, account_status = get_puuid(
             game_name,
             tag_line,
             headers
         )
         if puuid is None:
-            await message.channel.send(
-                "アカウント情報を取得できませんでした"
+            await send_account_error(
+                message.channel,
+                account_status
             )
-            return
+           
+                
+            return             
 
         match_response = riot_api.get_recent_match_ids(puuid, headers)
 
@@ -446,76 +480,76 @@ async def on_message(message):
                             result = "LOSS"
                             losses_count = losses_count + 1
                             
-                            timeline_data = timeline_response.json()
-                            
-                            frames = timeline_data["info"]["frames"]
-                            last_frame = frames[-1]
-
-                            participant_id = str(player_data["participantId"])
+                        timeline_data = timeline_response.json()
                         
-                            participant_frame = last_frame["participantFrames"][participant_id]
+                        frames = timeline_data["info"]["frames"]
+                        last_frame = frames[-1]
+
+                        participant_id = str(player_data["participantId"])
+                    
+                        participant_frame = last_frame["participantFrames"][participant_id]
                            
 
                             
 
                             
                             
-                            game_duration = match_data["info"]["gameDuration"]
+                        game_duration = match_data["info"]["gameDuration"]
 
 
-                            minions_cs = participant_frame.get("minionsKilled", 0)
-                            jungle_cs = participant_frame.get("jungleMinionsKilled",0)
+                        minions_cs = participant_frame.get("minionsKilled", 0)
+                        jungle_cs = participant_frame.get("jungleMinionsKilled",0)
 
-                            cs = minions_cs + jungle_cs
+                        cs = minions_cs + jungle_cs
 
-                            
+                        
 
-                            game_duration = match_data["info"]["gameDuration"]
-                            minutes = game_duration // 60
-                            seconds = game_duration % 60
+                        game_duration = match_data["info"]["gameDuration"]
+                        minutes = game_duration // 60
+                        seconds = game_duration % 60
 
-                            team_id = player_data["teamId"]
-                            team_kills = 0
-                            
-                            for participant in participants:
-                                if participant["teamId"] == team_id:
-                                    team_kills += participant["kills"]
+                        team_id = player_data["teamId"]
+                        team_kills = 0
+                        
+                        for participant in participants:
+                            if participant["teamId"] == team_id:
+                                team_kills += participant["kills"]
 
-                            if team_kills > 0:
-                                kill_participation = (
-                                    (player_data["kills"] + player_data["assists"])
-                                    / team_kills
-                                    *100
-
-                                )
-                            else:
-                                kill_participation = 0            
-
-
-                            recent_message +=str(number) + ". " + result + "\n"
-                            champion_name = champion_map.get(
-                                player_data["championId"],
-                                player_data["championName"]
+                        if team_kills > 0:
+                            kill_participation = (
+                                (player_data["kills"] + player_data["assists"])
+                                / team_kills
+                                *100
 
                             )
+                        else:
+                            kill_participation = 0            
 
-                            recent_message += "チャンピオン: " + champion_name + "\n"
 
-                            recent_message += "KDA: "
-                            recent_message += str(player_data["kills"]) + "/"
-                            recent_message += str(player_data["deaths"]) + "/"
-                            recent_message += str(player_data["assists"]) + "\n\n"
-                            recent_message += "CS: " + str(cs) + "\n"
+                        recent_message +=str(number) + ". " + result + "\n"
+                        champion_name = champion_map.get(
+                            player_data["championId"],
+                            player_data["championName"]
+
+                        )
+
+                        recent_message += "チャンピオン: " + champion_name + "\n"
+
+                        recent_message += "KDA: "
+                        recent_message += str(player_data["kills"]) + "/"
+                        recent_message += str(player_data["deaths"]) + "/"
+                        recent_message += str(player_data["assists"]) + "\n\n"
+                        recent_message += "CS: " + str(cs) + "\n"
+                    
                         
-                            
 
-                            recent_message += "試合時間: " + str(minutes) + "分" + str(seconds) + "秒\n"
+                        recent_message += "試合時間: " + str(minutes) + "分" + str(seconds) + "秒\n"
 
-                            recent_message += "キル関与率: "
-                            recent_message += str(round(kill_participation, 1)) + "%\n\n"
+                        recent_message += "キル関与率: "
+                        recent_message += str(round(kill_participation, 1)) + "%\n\n"
 
 
-                    number = number + 1
+                number = number + 1
 
             summary = (
                 "直近5試合: "
@@ -556,18 +590,20 @@ async def on_message(message):
 
         headers = get_riot_headers()
 
-        puuid = get_puuid(
+        puuid, account_status = get_puuid(
             game_name,
             tag_line,
             headers
         )
         
         if puuid is None:
-            await message.channel.send(
-                "アカウント情報を取得できませんでした"
-
+            await send_account_error(
+                message.channel,
+                account_status
             )
             return
+
+    
 
 
         mastery_response = riot_api.get_mastery_data(puuid, headers)
@@ -616,17 +652,19 @@ async def on_message(message):
         headers = get_riot_headers()
 
         
-        puuid = get_puuid(
+        puuid, account_status = get_puuid(
             game_name,
             tag_line,
             headers
         )
 
         if puuid is None:
-            await message.channel.send(
-                "アカウント情報を取得できませんでした"
+            await send_account_error(
+                message.channel,
+                account_status
             )
             return
+            
 
         match_response = riot_api.get_recent_match_ids(puuid, headers)
 
@@ -827,17 +865,18 @@ async def on_message(message):
 
         headers = get_riot_headers()
 
-        puuid = get_puuid(
+        puuid, account_status = get_puuid(
             game_name,
             tag_line,
             headers
         )
         if puuid is None:
-            await message.channel.send(
-                "アカウント情報を取得できませんでした"
-
+            await send_account_error(
+                message.channel,
+                account_status
             )
             return
+            
         ingame_response = riot_api.get_ingame_data(
             puuid,
             headers
