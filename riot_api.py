@@ -1,6 +1,10 @@
 import requests
 
-def get_riot_account(game_name, tag_line,headers):
+def get_riot_account(
+        game_name: str,
+        tag_line: str,
+        headers: dict[str, str]
+) -> requests.Response:
     account_url = (
         "https://asia.api.riotgames.com"
         + "/riot/account/v1/accounts/by-riot-id/"
@@ -18,7 +22,10 @@ def get_riot_account(game_name, tag_line,headers):
 
     return account_response
 
-def get_rank_data(puuid, headers):
+def get_rank_data(
+        puuid: str,
+        headers: dict[str, str]
+) -> requests.Response:
     rank_url = (
         "https://jp1.api.riotgames.com"
         + "/lol/league/v4/entries/by-puuid/"
@@ -28,7 +35,10 @@ def get_rank_data(puuid, headers):
     rank_response = requests.get(rank_url, headers=headers)
     return rank_response
 
-def get_recent_match_ids(puuid, headers):
+def get_recent_match_ids(
+        puuid: str,
+        headers: dict[str, str]
+) -> requests.Response:
     match_url = (
         "https://asia.api.riotgames.com"
         + "/lol/match/v5/matches/by-puuid/"
@@ -47,7 +57,10 @@ def get_recent_match_ids(puuid, headers):
 
     return match_response
 
-def get_match_data(match_id, headers):
+def get_match_data(
+        match_id: str,
+        headers: dict[str, str]
+) -> requests.Response:
     match_url = (
         "https://asia.api.riotgames.com"
         + "/lol/match/v5/matches/"
@@ -58,7 +71,10 @@ def get_match_data(match_id, headers):
     match_response = requests.get(match_url, headers=headers)
     return match_response
 
-def get_match_timeline(match_id, headers):
+def get_match_timeline(
+        match_id: str,
+        headers: dict[str, str]
+) -> requests.Response:
     timeline_url = (
         "https://asia.api.riotgames.com"
         + "/lol/match/v5/matches/"
@@ -71,7 +87,10 @@ def get_match_timeline(match_id, headers):
 
     return timeline_response
 
-def get_mastery_data(puuid, headers):
+def get_mastery_data(
+        puuid: str,
+        headers: dict[str, str]
+) -> requests.Response:
     mastery_url = (
         "https://jp1.api.riotgames.com"
         + "/lol/champion-mastery/v4/champion-masteries/by-puuid/"
@@ -82,7 +101,10 @@ def get_mastery_data(puuid, headers):
     mastery_response = requests.get(mastery_url, headers=headers)
     return mastery_response
 
-def get_ingame_data(puuid, headers):
+def get_ingame_data(
+        puuid: str,
+        headers: dict[str, str]
+) -> requests.Response:
     ingame_url = (
         "https://jp1.api.riotgames.com"
         + "/lol/spectator/v5/active-games/by-summoner/"
@@ -93,7 +115,7 @@ def get_ingame_data(puuid, headers):
 
     return ingame_response
 
-def get_champion_map():
+def get_champion_map() -> dict[int. str]:
     version_response = requests.get(
         "https://ddragon.leagueoflegends.com/api/versions.json"
 

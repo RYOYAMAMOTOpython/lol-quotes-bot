@@ -1,10 +1,13 @@
 import discord
 
-def calculate_win_rate(wins, losses):
+def calculate_win_rate(wins, losses: int) -> float:
     total_games = wins + losses
     return (wins / total_games) * 100
 
-def create_rank_embed(solo_rank,flex_rank):
+def create_rank_embed(
+        solo_rank:dict,
+        flex_rank: dict |None
+) -> discord.Embed:
     wins = solo_rank["wins"]
     losses = solo_rank["losses"]
 
@@ -94,7 +97,7 @@ def create_rank_embed(solo_rank,flex_rank):
         embed.add_field(
             name="Flex Queue",
             value ="ランクなし",
-            inline=Flase
+            inline=False
 
         )
     return embed
@@ -108,7 +111,9 @@ def create_recent_embed(summary, recent_message):
     )
     return embed
 
-def create_mastery_embed(mastery_message):
+def create_mastery_embed(
+        mastery_message: str
+) -> discord.Embed:
     mastery_embed = discord.Embed(
         title="LoL Champion Mastery",
         description=mastery_message,
@@ -117,18 +122,18 @@ def create_mastery_embed(mastery_message):
     return mastery_embed    
 
 def create_stats_embed(
-    games_count,
-    wins_count,
-    losses_count,
-    recent_result,
-    average_kills,
-    average_deaths,
-    average_assists,
-    average_cs,
-    win_rate,
-    champion_message,
-    top_champion_message
-):
+    games_count: int,
+    wins_count: int,
+    losses_count: int,
+    recent_result: str,
+    average_kills: float,
+    average_deaths: float,
+    average_assists: float,
+    average_cs: float,
+    win_rate: float,
+    champion_message: str,
+    top_champion_message: str,
+) -> discord.Embed:
     stats_embed = discord.Embed(
         title="LoL Recent Stats",
         color=discord.Color.blue()
@@ -192,7 +197,10 @@ def create_stats_embed(
 
     return stats_embed
 
-def create_ingame_embed(ally_message, enemy_message):
+def create_ingame_embed(
+        ally_message: str,
+        enemy_message: str
+) -> discord.Embed:
     ingame_embed = discord.Embed(
         title="LoL In-Game",
         color=discord.Color.blue()

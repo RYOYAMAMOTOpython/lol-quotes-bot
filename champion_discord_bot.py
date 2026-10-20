@@ -21,7 +21,7 @@ load_dotenv(override=True)
 # .envからのDiscord botのトークを取得する
 TOKEN = os.getenv("DISCORD_TOKEN")
 RIOT_API_KEY = os.getenv("RIOT_API_KEY")
-def get_riot_headers():
+def get_riot_headers() -> dict[str,str]:
     return{
         "X-Riot-Token":RIOT_API_KEY
 
@@ -38,13 +38,13 @@ intents.message_content = True
 #Discord Bot本体を作成
 client = discord.Client(intents=intents)
 
-def find_solo_rank(rank_data):
+def find_solo_rank(rank_data: list[dict]) -> dict | None:
     for rank_info in rank_data:
         if rank_info["queueType"] == "RANKED_SOLO_5x5":
             return rank_info
     return None
 
-def find_flex_rank(rank_data):
+def find_flex_rank(rank_data: list[dict]) -> dict | None:
     for queue in rank_data:
         if queue["queueType"] == "RANKED_FLEX_SR":
             return queue
@@ -56,7 +56,7 @@ def find_flex_rank(rank_data):
 
 
 
-def get_github_user(user_name):
+def get_github_user(user_name: str) -> requests.Response:
     url = "https://api.github.com/users/" + user_name
     response = requests.get(url)
 
@@ -70,7 +70,7 @@ async def on_ready():
 
 
 
-def create_github_message(data):
+def create_github_message(data: dict) ->str:
     github_message = ""
     github_message += "ユーザー名: " + data["login"] + "\n"
     github_message += "名前: " + str(data["name"]) + "\n"
@@ -186,11 +186,15 @@ def create_help_message():
 
 
 
-def split_riot_id(riot_id):
+def split_riot_id(riot_id: str) -> tuple[str,str]:
     game_name, tag_line = riot_id.rsplit("#", 1)
     return game_name, tag_line
 
-def get_puuid(game_name, tag_line, headers):
+def get_puuid(
+    game_name: str,
+    tag_line: str,
+    headers: dict[str, str]
+) -> tuple[str | None, int]:    
     account_response = riot_api.get_riot_account(
         game_name,
         tag_line,
@@ -202,20 +206,13 @@ def get_puuid(game_name, tag_line, headers):
         return account_data["puuid"], 200
 
     return None, account_response.status_code
-def get_puuid(game_name, tag_line, headers):
-    account_response = riot_api.get_riot_account(
-        game_name,
-        tag_line,
-        headers
-    )
-    if account_response.status_code == 200:
-        account_data = account_response.json()
-        return account_data["puuid"], 200
-    
-    return None, account_response.status_code
 
 
-async def send_account_error(channel, account_status):
+
+async def send_account_error(
+        channel: discord.abc.Messageable,
+        account_status: int
+) -> None:
     if account_status == 401:
         await channel.send(
             "Riot APIキーが無効、または期限切れです"
