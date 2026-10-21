@@ -8,7 +8,7 @@ def calculate_win_rate(wins, losses: int) -> float:
 
 def create_rank_embed(
         solo_rank:dict,
-        flex_rank: dict |None
+        flex_rank: Optional[dict]
 ) -> discord.Embed:
     wins = solo_rank["wins"]
     losses = solo_rank["losses"]
