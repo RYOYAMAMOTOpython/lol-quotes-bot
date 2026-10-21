@@ -115,7 +115,7 @@ def get_ingame_data(
 
     return ingame_response
 
-def get_champion_map() -> dict[int. str]:
+def get_champion_map() -> dict[int, str]: 
     version_response = requests.get(
         "https://ddragon.leagueoflegends.com/api/versions.json"
 
