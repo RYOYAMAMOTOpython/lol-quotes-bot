@@ -1,4 +1,6 @@
+from typing import Optional
 import discord
+
 
 def calculate_win_rate(wins, losses: int) -> float:
     total_games = wins + losses
@@ -132,7 +134,7 @@ def create_stats_embed(
     average_cs: float,
     win_rate: float,
     champion_message: str,
-    top_champion_message: str,
+    top_champion_message: str
 ) -> discord.Embed:
     stats_embed = discord.Embed(
         title="LoL Recent Stats",

@@ -6,6 +6,7 @@ import riot_api
 import discord
 import embeds
 import logging
+from typing import Optional
 from dotenv import load_dotenv
 
 
@@ -38,13 +39,13 @@ intents.message_content = True
 #Discord Bot本体を作成
 client = discord.Client(intents=intents)
 
-def find_solo_rank(rank_data: list[dict]) -> dict | None:
+def find_solo_rank(rank_data: list[dict]) -> Optional[dict]:
     for rank_info in rank_data:
         if rank_info["queueType"] == "RANKED_SOLO_5x5":
             return rank_info
     return None
 
-def find_flex_rank(rank_data: list[dict]) -> dict | None:
+def find_flex_rank(rank_data: list[dict]) -> Optional[dict]:
     for queue in rank_data:
         if queue["queueType"] == "RANKED_FLEX_SR":
             return queue
@@ -194,7 +195,7 @@ def get_puuid(
     game_name: str,
     tag_line: str,
     headers: dict[str, str]
-) -> tuple[str | None, int]:    
+) -> tuple[Optional[str],int]: 
     account_response = riot_api.get_riot_account(
         game_name,
         tag_line,
