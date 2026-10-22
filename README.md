@@ -290,6 +290,8 @@ Riot Games APIのHTTPステータスコードに応じて、Discord上へ異な�
 
 ## システム構成
 
+![システム構成図](./mermaid-diagram.png)
+
 ```text
 Discord
    ↓
