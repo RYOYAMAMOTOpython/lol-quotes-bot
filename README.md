@@ -316,23 +316,35 @@ Discordからコマンドを受け取り、必要に応じて各APIへアクセ�
 
 ## ファイル構成
 
+
 ```text
 lol-quotes-bot
 │
 ├─ champion_discord_bot.py
 ├─ riot_api.py
 ├─ embeds.py
-├─ champion_bot.py
 ├─ quotes.json
-├─ api_test.py
-├─ riot_test.py
 ├─ requirements.txt
 ├─ README.md
+├─ demo.png
+├─ system-architecture.png
+│
+├─ tests/
+│  ├─ api_test.py
+│  └─ riot_test.py
+│
+├─ legacy/
+│  └─ champion_bot.py
+│
 ├─ .gitignore
-└─ Practice_old/
+└─ .gitattributes
 ```
 
-`.env` は秘密情報を含むためGitHubにはアップロードしていません。
+> `.env` はローカル環境およびOracle Cloud上でのみ使用し、Discord Bot TokenやRiot API Keyなどの秘密情報を保存しています。  
+> `.gitignore` に登録しているため、GitHubには公開していません。
+
+
+
 
 ---
 
@@ -405,17 +417,84 @@ Bot本体とセリフデータを分離することで、Pythonコードを変�
 
 ---
 
-### champion_bot.py
+## ファイルの役割
 
-Discord Bot化する前に制作した、ローカル環境用のLoLセリフBotです。
+### champion_discord_bot.py
 
-Pythonの基本文法やJSONの扱いを学習するために制作しました。
+Discord Bot本体です。
+
+Discord上のメッセージを受け取り、各コマンドに応じて処理を行います。
+
+主に以下を担当しています。
+
+```text
+Discordイベント処理
+コマンド判定
+Riot IDの分割
+PUUID取得
+APIレスポンス処理
+エラー処理
+戦績集計
+各機能の呼び出し
+```
 
 ---
 
-### api_test.py
+### riot_api.py
 
-GitHub APIとの通信処理を学習・確認するために使用したテストファイルです。
+Riot Games APIとの通信処理をまとめています。
+
+主な処理：
+
+```text
+Riot IDからアカウント情報取得
+ランク情報取得
+直近試合ID取得
+試合データ取得
+Timeline取得
+Champion Mastery取得
+Spectator情報取得
+Data Dragonからチャンピオン情報取得
+```
+
+API通信処理をBot本体から分離することで、役割を明確にしています。
+
+---
+
+### embeds.py
+
+Discord Embedの生成処理をまとめています。
+
+主なEmbed：
+
+```text
+ランク
+直近試合
+マスタリー
+戦績
+試合中情報
+ヘルプ
+```
+
+表示処理をBot本体から分離することで、コマンド処理と表示処理を分けています。
+
+---
+
+### quotes.json
+
+LoLチャンピオンのセリフを保存しているJSONファイルです。
+
+Bot本体とセリフデータを分離することで、Pythonコードを変更せずにチャンピオンやセリフを追加できます。
+
+---
+
+### tests/
+
+APIとの通信やレスポンス処理を確認するために使用したテスト用ファイルをまとめています。
+
+#### api_test.py
+
+GitHub APIとの通信を確認するために使用したファイルです。
 
 主に以下を確認しました。
 
@@ -425,13 +504,37 @@ response.status_code
 response.json()
 ```
 
----
+#### riot_test.py
 
-### riot_test.py
-
-Riot Games APIをDiscord Botへ組み込む前に、API単体で通信確認を行うために使用したテストファイルです。
+Riot Games APIをDiscord Botへ組み込む前に、API単体で通信確認を行うために使用したファイルです。
 
 Riot IDからPUUIDを取得し、そのPUUIDを利用してランク情報を取得する処理などを確認しました。
+
+---
+
+### legacy/
+
+現在のDiscord Botへ発展する前に制作した旧バージョンのコードを保存しています。
+
+#### champion_bot.py
+
+Discord Bot化する前に制作した、ローカル環境用のLoLセリフBotです。
+
+Pythonの基本文法やJSONの扱いを学習するために制作しました。
+
+このプログラムをもとに、現在のDiscord Botへ段階的に機能を拡張しました。
+
+---
+
+### requirements.txt
+
+Botの動作に必要なPythonライブラリを管理しています。
+
+```text
+discord.py
+python-dotenv
+requests
+```
 
 ---
 
